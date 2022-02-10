@@ -1,8 +1,10 @@
 **Note from helenetran3:** This forked repository is intended to update the code and make it run. This README will be updated once the code works using the current version of [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). 
 
-The code should be executed using **Python 2.7**.
+Steps:
+1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
+2. Run the code using **Python 2.7** as specified below (I personally use Conda to create an environment with the compatible librairies).
 
-The text below is written by the original authors.
+*The following text is written by the original authors.*
 
 # MultimodalDNN
 
