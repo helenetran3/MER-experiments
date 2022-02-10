@@ -1,3 +1,9 @@
+**Note from helenetran3:** This forked repository is intended to update the code and make it run. This README will be updated once the code works using the current version of [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). 
+
+The code should be executed using **Python 2.7**.
+
+The text below is written by the original authors.
+
 # MultimodalDNN
 
 This repository provides code from the University of Edinburgh Team G25 for the ACL 2018 [Workshop on Human Multimodal Language](http://multicomp.cs.cmu.edu/acl2018multimodalchallenge/).
