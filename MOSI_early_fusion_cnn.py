@@ -46,8 +46,8 @@ from mmdata import MOSEI, MOSI
 import argparse
 from collections import defaultdict
 from mmdata.dataset import Dataset
-from utils.parser_utils import KerasParserClass
-from utils.storage import build_experiment_folder, save_statistics
+# from utils.parser_utils import KerasParserClass
+# from utils.storage import build_experiment_folder, save_statistics
 
 val_method = "val_loss"
 val_mode = "min"
@@ -64,7 +64,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import coverage_error
 from sklearn.metrics import label_ranking_average_precision_score
 from sklearn.metrics import label_ranking_loss
-import segeval
+# import segeval
 from keras.models import Sequential
 from keras.optimizers import Adam
 from keras.layers.embeddings import Embedding

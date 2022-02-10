@@ -46,8 +46,8 @@ from mmdata import MOSEI
 import argparse
 from collections import defaultdict
 from mmdata.dataset import Dataset
-from utils.parser_utils import KerasParserClass
-from utils.storage import build_experiment_folder, save_statistics
+# from utils.parser_utils import KerasParserClass
+# from utils.storage import build_experiment_folder, save_statistics
 
 #switch between val_loss+min or val_acc+max
 val_method = "val_loss"
@@ -63,9 +63,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import coverage_error
 from sklearn.metrics import label_ranking_average_precision_score
 from sklearn.metrics import label_ranking_loss
-import segeval
+# import segeval
 from keras.models import Sequential
-from keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, Conv1D, MaxPooling1D, Conv2D, Flatten,BatchNormalization
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard, CSVLogger
 
@@ -333,7 +333,7 @@ np.random.seed(seed)
 import os
 os.environ['PYTHONHASHSEED'] = '0'
 import tensorflow as tf
-tf.set_random_seed(seed)
+tf.compat.v1.set_random_seed(seed)
 from joblib import Parallel, delayed
 import multiprocessing
 
