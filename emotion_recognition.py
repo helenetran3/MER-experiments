@@ -141,7 +141,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     # sort through all the video ID, segment ID pairs
     train_set_ids = []
     for vid in train_ids:
-        for sid in dataset['embeddings'][vid].keys():
+        for sid in list(dataset['embeddings'][vid].keys()):
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid] and pad(dataset['covarep'][vid][sid], max_len).shape[1] == 74 and sid != 0:
                     train_set_ids.append((vid, sid))
@@ -157,7 +157,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
 
     valid_set_ids = []
     for vid in valid_ids:
-        for sid in dataset['embeddings'][vid].keys():
+        for sid in list(dataset['embeddings'][vid].keys()):
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid] and pad(dataset['covarep'][vid][sid], max_len).shape[1] == 74 and sid != 0:
                     valid_set_ids.append((vid, sid))
@@ -174,7 +174,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     test_set_ids = []
     for vid in test_ids:
         if vid in dataset['embeddings']:
-            for sid in dataset['embeddings'][vid].keys():
+            for sid in list(dataset['embeddings'][vid].keys()):
                 if mode == "all" or mode == "AV":
                     if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid] and pad(dataset['covarep'][vid][sid], max_len).shape[1] == 74 and sid!= 0:
                         test_set_ids.append((vid, sid))

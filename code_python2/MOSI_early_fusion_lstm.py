@@ -88,6 +88,7 @@ def pad(data, max_len):
         return data[idx]
 #        return data[-max_len:]
 
+
 def get_idx(val):
     if val <= -1.8:
         return 0
@@ -109,9 +110,9 @@ def convert_S5_hot(orig):
         idx = get_idx(i)
         new[idx] = 1
         converted.append(new)
-        print(idx)
-        print("cold: ", i)
-        print("hot: ", new)
+        print idx
+        print "cold: ", i
+        print "hot: ", new
     return np.array(converted)
 
 
@@ -130,15 +131,15 @@ def run_experiment(max_len, dropout_rate, n_layers):
 
     global dataset,train_ids, valid_ids, test_ids, mode, task, val_method, val_mode, use_PCA
 
-    # for PCA if set to True
+    # For PCA if set to True
     visual_components = 25
     audio_components = 20
     text_components = 110
 
     nodes = 100
     epochs = 200
-    outfile = "MOSI_sweep/late_"+mode+"_"+str(task)+"_"+str(n_layers)+"_"+str(max_len)+"_"+str(dropout_rate)
-    experiment_prefix = "late"
+    outfile = "MOSI_sweep/lstm_"+mode+"_"+str(task)+"_"+str(n_layers)+"_"+str(max_len)+"_"+str(dropout_rate)
+    experiment_prefix = "lstm"
     batch_size = 64
     logs_path = "regression_logs/"
     experiment_name = "{}_n_{}_dr_{}_nl_{}_ml_{}".format(experiment_prefix,nodes,dropout_rate, n_layers, max_len)
@@ -147,7 +148,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     # sort through all the video ID, segment ID pairs
     train_set_ids = []
     for vid in train_ids:
-        for sid in list(dataset['embeddings'][vid].keys()):
+        for sid in dataset['embeddings'][vid].keys():
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                     train_set_ids.append((vid, sid))
@@ -163,7 +164,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
 
     valid_set_ids = []
     for vid in valid_ids:
-        for sid in list(dataset['embeddings'][vid].keys()):
+        for sid in dataset['embeddings'][vid].keys():
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                     valid_set_ids.append((vid, sid))
@@ -180,7 +181,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     test_set_ids = []
     for vid in test_ids:
         if vid in dataset['embeddings']:
-            for sid in list(dataset['embeddings'][vid].keys()):
+            for sid in dataset['embeddings'][vid].keys():
                 if mode == "all" or mode == "AV":
                     if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                         test_set_ids.append((vid, sid))
@@ -296,6 +297,34 @@ def run_experiment(max_len, dropout_rate, n_layers):
             valid_set_text = valid_set_text_pca.reshape(nsamples2, nx2, text_components)
             test_set_text = test_set_text_pca.reshape(nsamples3, nx3, text_components)
             
+    if mode == "all":
+        x_train = np.concatenate((train_set_visual, train_set_audio, train_set_text), axis=2)
+        x_valid = np.concatenate((valid_set_visual, valid_set_audio, valid_set_text), axis=2)
+        x_test = np.concatenate((test_set_visual, test_set_audio, test_set_text), axis=2)
+    if mode == "AV":
+        x_train = np.concatenate((train_set_visual, train_set_audio), axis=2)
+        x_valid = np.concatenate((valid_set_visual, valid_set_audio), axis=2)
+        x_test = np.concatenate((test_set_visual, test_set_audio), axis=2)
+    if mode == "AT":
+        x_train = np.concatenate((train_set_audio, train_set_text), axis=2)
+        x_valid = np.concatenate((valid_set_audio, valid_set_text), axis=2)
+        x_test = np.concatenate((test_set_audio, test_set_text), axis=2)
+    if mode == "VT":
+        x_train = np.concatenate((train_set_visual, train_set_text), axis=2)
+        x_valid = np.concatenate((valid_set_visual, valid_set_text), axis=2)
+        x_test = np.concatenate((test_set_visual, test_set_text), axis=2)
+    if mode == "V":
+        x_train = train_set_visual
+        x_valid = valid_set_visual
+        x_test = test_set_visual
+    if mode == "A":
+        x_train = train_set_audio
+        x_valid = valid_set_audio
+        x_test = test_set_audio
+    if mode == "T":
+        x_train = train_set_text
+        x_valid = valid_set_text
+        x_test = test_set_text
 
 
     k = 3
@@ -304,109 +333,77 @@ def run_experiment(max_len, dropout_rate, n_layers):
         val_method = "val_acc"
         val_mode = "max"
         emote_final = 'sigmoid'
-        last_node = 1
     if task == "SR":
         val_method = "val_loss"
         val_mode = "min"
         emote_final = 'linear'        
-        last_node = 1
     if task == "S5":
         val_method = "val_acc"
         val_mode = "max"
         emote_final = 'softmax'
-        last_node = 5
+
     model = Sequential()
+    emote_final = 'linear'
 
-    # AUDIO
-    if mode == "all" or mode == "AT" or mode == "AV":
-        model1_in = Input(shape=(max_len, train_set_audio.shape[2]))
-        model1_cnn = Conv1D(filters=64, kernel_size=k, activation='relu')(model1_in)
-        model1_mp = MaxPooling1D(m)(model1_cnn)
-        model1_fl = Flatten()(model1_mp)
-        model1_dropout = Dropout(dropout_rate)(model1_fl)
-        model1_dense = Dense(nodes, activation="relu")(model1_dropout)
-        model1_out = Dense(last_node, activation=emote_final)(model1_dense)
+    if n_layers == 1:
+        model.add(BatchNormalization(input_shape=(max_len, x_train.shape[2])))
+        model.add(LSTM(64))
+        model.add(Dropout(dropout_rate))
+        model.add(Dense(nodes, activation="relu"))
+        model.add(Dropout(dropout_rate))
             
-    # TEXT = BLSTM from unimodal
-    if mode == "all" or mode == "AT" or mode == "VT":
-        model2_in = Input(shape=(max_len, train_set_text.shape[2]))
-        model2_lstm = Bidirectional(LSTM(64))(model2_in)
-        model2_dropout = Dropout(dropout_rate)(model2_lstm)
-        model2_dense = Dense(nodes, activation="relu")(model2_dropout)
-        model2_out = Dense(last_node, activation=emote_final)(model2_dense)
+    if n_layers == 2:
+        model.add(BatchNormalization(input_shape=(max_len, x_train.shape[2])))
+        model.add(LSTM(64,return_sequences=True,input_shape=(max_len, x_train.shape[2])))
+        model.add(Dropout(dropout_rate))
+        model.add(LSTM(64))
+        model.add(Dropout(dropout_rate))
+        model.add(Dense(nodes, activation="relu"))
+        model.add(Dropout(dropout_rate))
+                    
+    if n_layers == 3:
+        model.add(BatchNormalization(input_shape=(max_len, x_train.shape[2])))
+        model.add(LSTM(64,return_sequences=True,input_shape=(max_len, x_train.shape[2])))
+        model.add(Dropout(dropout_rate))
+        model.add(LSTM(64,return_sequences=True,input_shape=(max_len, x_train.shape[2])))
+        model.add(Dropout(dropout_rate))
+        model.add(LSTM(64))
+        model.add(Dropout(dropout_rate))
+        model.add(Dense(nodes, activation="relu"))
+        model.add(Dropout(dropout_rate))
 
-    # VIDEO - CNN from unimodal
-    if mode == "all" or mode == "AV" or mode == "VT":
-        model3_in = Input(shape=(max_len, train_set_visual.shape[2]))
-        model3_cnn = Conv1D(filters=64, kernel_size=k, activation='relu')(model3_in)
-        model3_mp = MaxPooling1D(m)(model3_cnn)
-        model3_fl = Flatten()(model3_mp)
-        model3_dropout = Dropout(dropout_rate)(model3_fl)
-        model3_dense = Dense(nodes, activation="relu")(model3_dropout)
-        model3_out = Dense(last_node, activation=emote_final)(model3_dense)
-        
-
-    if mode == "all":
-        concatenated = concatenate([model1_out, model2_out, model3_out])
-    if mode == "AV":
-        concatenated = concatenate([model1_out, model3_out])
-    if mode == "AT":
-        concatenated = concatenate([model1_out, model2_out])
-    if mode == "VT":
-        concatenated = concatenate([model2_out, model3_out])
-
-    out = Dense(last_node, activation=emote_final)(concatenated)    
-
-    if mode == "all":
-        merged_model = Model([model1_in, model2_in, model3_in], out)
-    if mode == "AV":
-        merged_model = Model([model1_in, model3_in], out)
-    if mode == "AT":
-        merged_model = Model([model1_in, model2_in], out)
-    if mode == "VT":
-        merged_model = Model([model2_in, model3_in], out)
-
-    if task == "SB":
-        merged_model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
-    if task == "S5":
-        merged_model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
     if task == "SR":
-        merged_model.compile('adam', loss='mean_absolute_error')
+        model.add(Dense(1, activation=emote_final))
+    if task == "SB":
+        model.add(Dense(1, activation=emote_final))
+    if task == "S5":
+        model.add(Dense(5, activation=emote_final))
 
-    if mode == "all":
-        x_train = [train_set_audio, train_set_text, train_set_visual]
-        x_valid = [valid_set_audio, valid_set_text, valid_set_visual]
-        x_test = [test_set_audio, test_set_text, test_set_visual]
-    if mode == "AV":
-        x_train = [train_set_audio, train_set_visual]
-        x_valid = [valid_set_audio,  valid_set_visual]
-        x_test = [test_set_audio, test_set_visual]
-    if mode == "AT":
-        x_train = [train_set_audio, train_set_text]
-        x_valid = [valid_set_audio, valid_set_text]
-        x_test = [test_set_audio, test_set_text]
-    if mode == "VT":
-        x_train = [train_set_text, train_set_visual]
-        x_valid = [valid_set_text, valid_set_visual]
-        x_test = [test_set_text, test_set_visual]
-    
+            
+    if task == "SB":
+        model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
+    if task == "S5":
+        model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
+    if task == "SR":
+        model.compile('adam', loss='mean_absolute_error')
 
     early_stopping = EarlyStopping(monitor=val_method,
                                    min_delta=0,
                                    patience=10,
                                    verbose=1, mode=val_mode)
     callbacks_list = [early_stopping]
-    merged_model.fit(x_train, y_train,
+    model.fit(x_train, y_train,
               batch_size=batch_size,
               epochs=epochs,
               validation_data=[x_valid, y_valid],
               callbacks=callbacks_list)
-    preds = merged_model.predict(x_test)
+
+    preds = model.predict(x_test)
     out = open(outfile, "wb")
 
-    print("testing output before eval metrics calcs..")
-    print(y_test[0])
-    print(preds[0])
+    print "testing output before eval metrics calcs.."
+    print y_test[0]
+    print preds[0]
     
     if task == "SR":
         preds = np.concatenate(preds)
@@ -481,6 +478,12 @@ if mode == "AT":
 if mode == "VT":
     bimodal = Dataset.merge(embeddings, facet)
     dataset = bimodal.align('embeddings')
+if mode == "T":
+    dataset = embeddings
+if mode == "A":
+    dataset = covarep
+if mode == "V":
+    dataset = facet
 
 
 # SWEEP values    
@@ -489,7 +492,7 @@ DROP = [0.1, 0.2]
 LAYER = [1, 2, 3]
 
 
-use_PCA = True
+use_PCA = False
 
 # Run sweep in parallel
 Parallel(n_jobs=num_cores)(delayed(run_experiment)(max_len=i, dropout_rate=j, n_layers=k) for i in LENS for j in DROP for k in LAYER) 
