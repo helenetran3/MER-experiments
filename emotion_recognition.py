@@ -42,10 +42,10 @@ import sys
 import numpy as np
 from collections import defaultdict
 from operator import itemgetter
-from mmdata import MOSEI
+# from mmdata import MOSEI
+# from mmdata.dataset import Dataset
 import argparse
 from collections import defaultdict
-from mmdata.dataset import Dataset
 # from utils.parser_utils import KerasParserClass
 # from utils.storage import build_experiment_folder, save_statistics
 
@@ -69,8 +69,9 @@ from tensorflow.keras.optimizers import Adam
 from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, Conv1D, MaxPooling1D, Conv2D, Flatten,BatchNormalization
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard, CSVLogger
 
+
 def pad(data, max_len):
-    """A funtion for padding/truncating sequence data to a given lenght"""
+    """A function for padding/truncating sequence data to a given length"""
     # recall that data at each time step is a tuple (start_time, end_time, feature_vector), we only take the vector
     data = np.array([feature[2] for feature in data])
     n_rows = data.shape[0]
@@ -84,7 +85,6 @@ def pad(data, max_len):
         new_data = data[-max_len:]
         return new_data
 
-    
 
 def custom_split(train, valid):
     valid = list(valid)
@@ -121,8 +121,6 @@ def get_class_MAE(truth, preds):
         o = ref[i]+"="+str(class_MAE[i]) + "\n"
         outstring += o
     return outstring
-
-
 
 
 def run_experiment(max_len, dropout_rate, n_layers):
@@ -344,32 +342,32 @@ mode = sys.argv[1]
 
 
 # Download the data if not present
-mosei = MOSEI()
-embeddings = mosei.embeddings()
-if mode == "all" or mode == "AV" or mode == "VT" or mode == "V":
-    facet = mosei.facet()
-if mode == "all" or mode == "AT" or mode == "AV" or mode == "A":
-    covarep = mosei.covarep()
-sentiments = mosei.sentiments() 
-emotions = mosei.emotions()
-train_ids = mosei.train()
-valid_ids = mosei.valid()
-train_ids, valid_ids, test_ids = custom_split(train_ids, valid_ids)
+# mosei = MOSEI()
+# embeddings = mosei.embeddings()
+# if mode == "all" or mode == "AV" or mode == "VT" or mode == "V":
+#     facet = mosei.facet()
+# if mode == "all" or mode == "AT" or mode == "AV" or mode == "A":
+#     covarep = mosei.covarep()
+# sentiments = mosei.sentiments()
+# emotions = mosei.emotions()
+# train_ids = mosei.train()
+# valid_ids = mosei.valid()
+# train_ids, valid_ids, test_ids = custom_split(train_ids, valid_ids)
 
     
-# Merge different features and do word level feature alignment (align according to timestamps of embeddings)
-if mode == "all" or mode == "AV":
-    bimodal = Dataset.merge(embeddings, facet)
-    trimodal = Dataset.merge(bimodal, covarep)
-    dataset = trimodal.align('embeddings')
-if mode == "AT" or mode == "A":
-    bimodal = Dataset.merge(embeddings, covarep)
-    dataset = bimodal.align('embeddings')
-if mode == "VT" or mode == "V":
-    bimodal = Dataset.merge(embeddings, facet)
-    dataset = bimodal.align('embeddings')
-if mode == "T":
-    dataset = embeddings
+# # Merge different features and do word level feature alignment (align according to timestamps of embeddings)
+# if mode == "all" or mode == "AV":
+#     bimodal = Dataset.merge(embeddings, facet)
+#     trimodal = Dataset.merge(bimodal, covarep)
+#     dataset = trimodal.align('embeddings')
+# if mode == "AT" or mode == "A":
+#     bimodal = Dataset.merge(embeddings, covarep)
+#     dataset = bimodal.align('embeddings')
+# if mode == "VT" or mode == "V":
+#     bimodal = Dataset.merge(embeddings, facet)
+#     dataset = bimodal.align('embeddings')
+# if mode == "T":
+#     dataset = embeddings
 
 
 # SWEEP values    
