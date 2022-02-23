@@ -37,6 +37,8 @@
 #  ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 #  THIS SOFTWARE.
 ################################################################################
+
+
 import sys
 import numpy as np
 from collections import defaultdict
@@ -109,9 +111,9 @@ def convert_S5_hot(orig):
         idx = get_idx(i)
         new[idx] = 1
         converted.append(new)
-        print(idx)
-        print("cold: ", i)
-        print("hot: ", new)
+        print idx
+        print "cold: ", i
+        print "hot: ", new
     return np.array(converted)
 
 
@@ -130,15 +132,15 @@ def run_experiment(max_len, dropout_rate, n_layers):
 
     global dataset,train_ids, valid_ids, test_ids, mode, task, val_method, val_mode, use_PCA
 
-    # for PCA if set to True
+    # For PCA if set to True
     visual_components = 25
     audio_components = 20
     text_components = 110
 
     nodes = 100
     epochs = 200
-    outfile = "MOSI_sweep/late_"+mode+"_"+str(task)+"_"+str(n_layers)+"_"+str(max_len)+"_"+str(dropout_rate)
-    experiment_prefix = "late"
+    outfile = "MOSI_sweep/int_"+mode+"_"+str(task)+"_"+str(n_layers)+"_"+str(max_len)+"_"+str(dropout_rate)
+    experiment_prefix = "intermediate"
     batch_size = 64
     logs_path = "regression_logs/"
     experiment_name = "{}_n_{}_dr_{}_nl_{}_ml_{}".format(experiment_prefix,nodes,dropout_rate, n_layers, max_len)
@@ -147,7 +149,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     # sort through all the video ID, segment ID pairs
     train_set_ids = []
     for vid in train_ids:
-        for sid in list(dataset['embeddings'][vid].keys()):
+        for sid in dataset['embeddings'][vid].keys():
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                     train_set_ids.append((vid, sid))
@@ -163,7 +165,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
 
     valid_set_ids = []
     for vid in valid_ids:
-        for sid in list(dataset['embeddings'][vid].keys()):
+        for sid in dataset['embeddings'][vid].keys():
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                     valid_set_ids.append((vid, sid))
@@ -180,7 +182,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     test_set_ids = []
     for vid in test_ids:
         if vid in dataset['embeddings']:
-            for sid in list(dataset['embeddings'][vid].keys()):
+            for sid in dataset['embeddings'][vid].keys():
                 if mode == "all" or mode == "AV":
                     if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                         test_set_ids.append((vid, sid))
@@ -304,17 +306,14 @@ def run_experiment(max_len, dropout_rate, n_layers):
         val_method = "val_acc"
         val_mode = "max"
         emote_final = 'sigmoid'
-        last_node = 1
     if task == "SR":
         val_method = "val_loss"
         val_mode = "min"
         emote_final = 'linear'        
-        last_node = 1
     if task == "S5":
         val_method = "val_acc"
         val_mode = "max"
         emote_final = 'softmax'
-        last_node = 5
     model = Sequential()
 
     # AUDIO
@@ -325,7 +324,9 @@ def run_experiment(max_len, dropout_rate, n_layers):
         model1_fl = Flatten()(model1_mp)
         model1_dropout = Dropout(dropout_rate)(model1_fl)
         model1_dense = Dense(nodes, activation="relu")(model1_dropout)
-        model1_out = Dense(last_node, activation=emote_final)(model1_dense)
+        for i in range(2, n_layers + 1):
+            model1_dropout = Dropout(dropout_rate)(model1_dense)
+            model1_dense = Dense(nodes, activation="relu")(model1_dropout)
             
     # TEXT = BLSTM from unimodal
     if mode == "all" or mode == "AT" or mode == "VT":
@@ -333,7 +334,9 @@ def run_experiment(max_len, dropout_rate, n_layers):
         model2_lstm = Bidirectional(LSTM(64))(model2_in)
         model2_dropout = Dropout(dropout_rate)(model2_lstm)
         model2_dense = Dense(nodes, activation="relu")(model2_dropout)
-        model2_out = Dense(last_node, activation=emote_final)(model2_dense)
+        for i in range(2, n_layers + 1):
+            model2_dropout = Dropout(dropout_rate)(model2_dense)
+            model2_dense = Dense(nodes, activation="relu")(model2_dropout)
 
     # VIDEO - CNN from unimodal
     if mode == "all" or mode == "AV" or mode == "VT":
@@ -343,19 +346,28 @@ def run_experiment(max_len, dropout_rate, n_layers):
         model3_fl = Flatten()(model3_mp)
         model3_dropout = Dropout(dropout_rate)(model3_fl)
         model3_dense = Dense(nodes, activation="relu")(model3_dropout)
-        model3_out = Dense(last_node, activation=emote_final)(model3_dense)
+        for i in range(2, n_layers + 1):
+            model3_dropout = Dropout(dropout_rate)(model3_dense)
+            model3_dense = Dense(nodes, activation="relu")(model3_dropout)
         
 
     if mode == "all":
-        concatenated = concatenate([model1_out, model2_out, model3_out])
+        concatenated = concatenate([model1_dense, model2_dense, model3_dense])
     if mode == "AV":
-        concatenated = concatenate([model1_out, model3_out])
+        concatenated = concatenate([model1_dense, model3_dense])
     if mode == "AT":
-        concatenated = concatenate([model1_out, model2_out])
+        concatenated = concatenate([model1_dense, model2_dense])
     if mode == "VT":
-        concatenated = concatenate([model2_out, model3_out])
+        concatenated = concatenate([model2_dense, model3_dense])
+    dense = Dense(200, activation='relu')(concatenated)
+    dense2 = Dense(200, activation='relu')(dense)
 
-    out = Dense(last_node, activation=emote_final)(concatenated)    
+    if task == "SR":
+        out = Dense(1, activation=emote_final)(dense2)    
+    if task == "SB":
+        out = Dense(1, activation=emote_final)(dense2)    
+    if task == "S5":
+        out = Dense(5, activation=emote_final)(dense2)    
 
     if mode == "all":
         merged_model = Model([model1_in, model2_in, model3_in], out)
@@ -404,9 +416,9 @@ def run_experiment(max_len, dropout_rate, n_layers):
     preds = merged_model.predict(x_test)
     out = open(outfile, "wb")
 
-    print("testing output before eval metrics calcs..")
-    print(y_test[0])
-    print(preds[0])
+    print "testing output before eval metrics calcs.."
+    print y_test[0]
+    print preds[0]
     
     if task == "SR":
         preds = np.concatenate(preds)
@@ -489,7 +501,7 @@ DROP = [0.1, 0.2]
 LAYER = [1, 2, 3]
 
 
-use_PCA = True
+use_PCA = False
 
 # Run sweep in parallel
 Parallel(n_jobs=num_cores)(delayed(run_experiment)(max_len=i, dropout_rate=j, n_layers=k) for i in LENS for j in DROP for k in LAYER) 

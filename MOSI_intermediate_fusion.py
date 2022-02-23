@@ -111,9 +111,9 @@ def convert_S5_hot(orig):
         idx = get_idx(i)
         new[idx] = 1
         converted.append(new)
-        print idx
-        print "cold: ", i
-        print "hot: ", new
+        print(idx)
+        print("cold: ", i)
+        print("hot: ", new)
     return np.array(converted)
 
 
@@ -149,7 +149,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     # sort through all the video ID, segment ID pairs
     train_set_ids = []
     for vid in train_ids:
-        for sid in dataset['embeddings'][vid].keys():
+        for sid in list(dataset['embeddings'][vid].keys()):
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                     train_set_ids.append((vid, sid))
@@ -165,7 +165,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
 
     valid_set_ids = []
     for vid in valid_ids:
-        for sid in dataset['embeddings'][vid].keys():
+        for sid in list(dataset['embeddings'][vid].keys()):
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                     valid_set_ids.append((vid, sid))
@@ -182,7 +182,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     test_set_ids = []
     for vid in test_ids:
         if vid in dataset['embeddings']:
-            for sid in dataset['embeddings'][vid].keys():
+            for sid in list(dataset['embeddings'][vid].keys()):
                 if mode == "all" or mode == "AV":
                     if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid]:
                         test_set_ids.append((vid, sid))
@@ -416,9 +416,9 @@ def run_experiment(max_len, dropout_rate, n_layers):
     preds = merged_model.predict(x_test)
     out = open(outfile, "wb")
 
-    print "testing output before eval metrics calcs.."
-    print y_test[0]
-    print preds[0]
+    print("testing output before eval metrics calcs..")
+    print(y_test[0])
+    print(preds[0])
     
     if task == "SR":
         preds = np.concatenate(preds)

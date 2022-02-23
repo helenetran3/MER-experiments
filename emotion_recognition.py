@@ -42,10 +42,8 @@ import sys
 import numpy as np
 from collections import defaultdict
 from operator import itemgetter
-from mmdata import MOSEI
 import argparse
 from collections import defaultdict
-from mmdata.dataset import Dataset
 # from utils.parser_utils import KerasParserClass
 # from utils.storage import build_experiment_folder, save_statistics
 
@@ -58,7 +56,7 @@ val_mode = "min"
 # The below is necessary for starting core Python generated random numbers
 # in a well-defined state.
 import sklearn
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, mean_absolute_error
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import coverage_error
 from sklearn.metrics import label_ranking_average_precision_score
@@ -69,8 +67,9 @@ from tensorflow.keras.optimizers import Adam
 from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, Conv1D, MaxPooling1D, Conv2D, Flatten,BatchNormalization
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard, CSVLogger
 
+
 def pad(data, max_len):
-    """A funtion for padding/truncating sequence data to a given lenght"""
+    """A function for padding/truncating sequence data to a given length"""
     # recall that data at each time step is a tuple (start_time, end_time, feature_vector), we only take the vector
     data = np.array([feature[2] for feature in data])
     n_rows = data.shape[0]
@@ -84,27 +83,23 @@ def pad(data, max_len):
         new_data = data[-max_len:]
         return new_data
 
-    
 
 def custom_split(train, valid):
     valid = list(valid)
     train = list(train)
-    train_ids = []
-    valid_ids = []
-    test_ids = []
     total = len(valid)
     half = total / 2
-    valid_ids = valid[:half]
-    test_ids = valid[half+1:]
+    valid_ids_list = valid[:half]
+    test_ids_list = valid[half + 1:]
     # 5 % of training into test data
     five_p = int(len(train) * 0.05)
-    train_ids = train[:-five_p]
-    test_ids = test_ids + train[-five_p:]
+    train_ids_list = train[:-five_p]
+    test_ids_list = test_ids_list + train[-five_p:]
     # 10% of leftover training into valid data
-    ten_p = int(len(train_ids) * 0.1)
-    train_ids = train_ids[:-ten_p]
-    valid_ids = valid_ids + train_ids[-ten_p:]
-    return train_ids, valid_ids, test_ids
+    ten_p = int(len(train_ids_list) * 0.1)
+    train_ids_list = train_ids_list[:-ten_p]
+    valid_ids_list = valid_ids_list + train_ids_list[-ten_p:]
+    return train_ids_list, valid_ids_list, test_ids_list
 
 
 def get_class_MAE(truth, preds):
@@ -115,14 +110,12 @@ def get_class_MAE(truth, preds):
     for i in range(len(truth[0])):
         T = truth[:, i]
         P = preds[:,i]
-        class_MAE.append(sklearn.metrics.mean_absolute_error(T, P))
+        class_MAE.append(mean_absolute_error(T, P))
     outstring = ""
     for i in range(len(class_MAE)):
         o = ref[i]+"="+str(class_MAE[i]) + "\n"
         outstring += o
     return outstring
-
-
 
 
 def run_experiment(max_len, dropout_rate, n_layers):
@@ -141,7 +134,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     # sort through all the video ID, segment ID pairs
     train_set_ids = []
     for vid in train_ids:
-        for sid in dataset['embeddings'][vid].keys():
+        for sid in list(dataset['embeddings'][vid].keys()):
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid] and pad(dataset['covarep'][vid][sid], max_len).shape[1] == 74 and sid != 0:
                     train_set_ids.append((vid, sid))
@@ -157,7 +150,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
 
     valid_set_ids = []
     for vid in valid_ids:
-        for sid in dataset['embeddings'][vid].keys():
+        for sid in list(dataset['embeddings'][vid].keys()):
             if mode == "all" or mode == "AV":
                 if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid] and pad(dataset['covarep'][vid][sid], max_len).shape[1] == 74 and sid != 0:
                     valid_set_ids.append((vid, sid))
@@ -174,7 +167,7 @@ def run_experiment(max_len, dropout_rate, n_layers):
     test_set_ids = []
     for vid in test_ids:
         if vid in dataset['embeddings']:
-            for sid in dataset['embeddings'][vid].keys():
+            for sid in list(dataset['embeddings'][vid].keys()):
                 if mode == "all" or mode == "AV":
                     if dataset['embeddings'][vid][sid] and dataset['facet'][vid][sid] and dataset['covarep'][vid][sid] and pad(dataset['covarep'][vid][sid], max_len).shape[1] == 74 and sid!= 0:
                         test_set_ids.append((vid, sid))
@@ -344,32 +337,32 @@ mode = sys.argv[1]
 
 
 # Download the data if not present
-mosei = MOSEI()
-embeddings = mosei.embeddings()
-if mode == "all" or mode == "AV" or mode == "VT" or mode == "V":
-    facet = mosei.facet()
-if mode == "all" or mode == "AT" or mode == "AV" or mode == "A":
-    covarep = mosei.covarep()
-sentiments = mosei.sentiments() 
-emotions = mosei.emotions()
-train_ids = mosei.train()
-valid_ids = mosei.valid()
-train_ids, valid_ids, test_ids = custom_split(train_ids, valid_ids)
+# mosei = MOSEI()
+# embeddings = mosei.embeddings()
+# if mode == "all" or mode == "AV" or mode == "VT" or mode == "V":
+#     facet = mosei.facet()
+# if mode == "all" or mode == "AT" or mode == "AV" or mode == "A":
+#     covarep = mosei.covarep()
+# sentiments = mosei.sentiments()
+# emotions = mosei.emotions()
+# train_ids = mosei.train()
+# valid_ids = mosei.valid()
+# train_ids, valid_ids, test_ids = custom_split(train_ids, valid_ids)
 
     
-# Merge different features and do word level feature alignment (align according to timestamps of embeddings)
-if mode == "all" or mode == "AV":
-    bimodal = Dataset.merge(embeddings, facet)
-    trimodal = Dataset.merge(bimodal, covarep)
-    dataset = trimodal.align('embeddings')
-if mode == "AT" or mode == "A":
-    bimodal = Dataset.merge(embeddings, covarep)
-    dataset = bimodal.align('embeddings')
-if mode == "VT" or mode == "V":
-    bimodal = Dataset.merge(embeddings, facet)
-    dataset = bimodal.align('embeddings')
-if mode == "T":
-    dataset = embeddings
+# # Merge different features and do word level feature alignment (align according to timestamps of embeddings)
+# if mode == "all" or mode == "AV":
+#     bimodal = Dataset.merge(embeddings, facet)
+#     trimodal = Dataset.merge(bimodal, covarep)
+#     dataset = trimodal.align('embeddings')
+# if mode == "AT" or mode == "A":
+#     bimodal = Dataset.merge(embeddings, covarep)
+#     dataset = bimodal.align('embeddings')
+# if mode == "VT" or mode == "V":
+#     bimodal = Dataset.merge(embeddings, facet)
+#     dataset = bimodal.align('embeddings')
+# if mode == "T":
+#     dataset = embeddings
 
 
 # SWEEP values    
