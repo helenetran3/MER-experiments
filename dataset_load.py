@@ -54,7 +54,7 @@ def download_dataset(pickle_name, pickle_folder="cmu_mosei/pickle_files/", align
             pickle.dump(cmu_mosei, fw)
 
 
-def load_dataset_pickle(pickle_name, pickle_folder="cmu_mosei"):
+def load_dataset_pickle(pickle_name, pickle_folder="cmu_mosei/pickle_files/"):
     """
     Load CMU-MOSEI data from pickle file.
 
