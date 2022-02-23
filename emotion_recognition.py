@@ -42,8 +42,6 @@ import sys
 import numpy as np
 from collections import defaultdict
 from operator import itemgetter
-# from mmdata import MOSEI
-# from mmdata.dataset import Dataset
 import argparse
 from collections import defaultdict
 # from utils.parser_utils import KerasParserClass
@@ -58,7 +56,7 @@ val_mode = "min"
 # The below is necessary for starting core Python generated random numbers
 # in a well-defined state.
 import sklearn
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, mean_absolute_error
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import coverage_error
 from sklearn.metrics import label_ranking_average_precision_score
@@ -89,22 +87,19 @@ def pad(data, max_len):
 def custom_split(train, valid):
     valid = list(valid)
     train = list(train)
-    train_ids = []
-    valid_ids = []
-    test_ids = []
     total = len(valid)
     half = total / 2
-    valid_ids = valid[:half]
-    test_ids = valid[half+1:]
+    valid_ids_list = valid[:half]
+    test_ids_list = valid[half + 1:]
     # 5 % of training into test data
     five_p = int(len(train) * 0.05)
-    train_ids = train[:-five_p]
-    test_ids = test_ids + train[-five_p:]
+    train_ids_list = train[:-five_p]
+    test_ids_list = test_ids_list + train[-five_p:]
     # 10% of leftover training into valid data
-    ten_p = int(len(train_ids) * 0.1)
-    train_ids = train_ids[:-ten_p]
-    valid_ids = valid_ids + train_ids[-ten_p:]
-    return train_ids, valid_ids, test_ids
+    ten_p = int(len(train_ids_list) * 0.1)
+    train_ids_list = train_ids_list[:-ten_p]
+    valid_ids_list = valid_ids_list + train_ids_list[-ten_p:]
+    return train_ids_list, valid_ids_list, test_ids_list
 
 
 def get_class_MAE(truth, preds):
@@ -115,7 +110,7 @@ def get_class_MAE(truth, preds):
     for i in range(len(truth[0])):
         T = truth[:, i]
         P = preds[:,i]
-        class_MAE.append(sklearn.metrics.mean_absolute_error(T, P))
+        class_MAE.append(mean_absolute_error(T, P))
     outstring = ""
     for i in range(len(class_MAE)):
         o = ref[i]+"="+str(class_MAE[i]) + "\n"
