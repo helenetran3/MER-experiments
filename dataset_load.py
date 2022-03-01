@@ -15,11 +15,11 @@ def avg_collapse_function(intervals, features):
 
 # CMU-MOSEI DATA DOWNLOAD FUNCTIONS
 
-def download_dataset(pickle_name, pickle_folder="cmu_mosei/pickle_files/", align_text=True, align_label=True):
+def download_dataset(pickle_name, pickle_folder, align_text, align_label):
     """
     Download CMU-MOSEI dataset using the SDK and perform data alignment (if desired).
 
-    :param pickle_name: name of the pickle object that contains the CMU-MOSEI mmdataset
+    :param pickle_name: name of the pickle object that will contain the CMU-MOSEI mmdataset
     :param pickle_folder: name of the folder where to save the pickle object
     :param align_text: whether we want data to align to the textual modality
     :param align_label: whether we want data to align to the labels
@@ -54,7 +54,7 @@ def download_dataset(pickle_name, pickle_folder="cmu_mosei/pickle_files/", align
             pickle.dump(cmu_mosei, fw)
 
 
-def load_dataset_pickle(pickle_name, pickle_folder="cmu_mosei/pickle_files/"):
+def load_dataset_pickle(pickle_name, pickle_folder):
     """
     Load CMU-MOSEI data from pickle file.
 
@@ -70,3 +70,17 @@ def load_dataset_pickle(pickle_name, pickle_folder="cmu_mosei/pickle_files/"):
         cmu_mosei = pickle.load(fr)
 
     return cmu_mosei
+
+
+def get_fold_ids():
+    """
+    Get CMU-MOSEI standard fold ids for training, validation, and test
+
+    :return: 3 lists of ids for training, validation, and test sets respectively
+    """
+
+    train_id = mmdatasdk.cmu_mosei.standard_folds.standard_train_fold
+    valid_id = mmdatasdk.cmu_mosei.standard_folds.standard_valid_fold
+    test_id = mmdatasdk.cmu_mosei.standard_folds.standard_test_fold
+
+    return train_id, valid_id, test_id

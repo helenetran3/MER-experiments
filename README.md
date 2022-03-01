@@ -1,10 +1,36 @@
 **Note from helenetran3:** This forked repository is intended to update the code and make it run with Python 3. This README will be updated once the code works using the current version of [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). 
 
-Steps:
+Only the code for **emotion recognition** is updated. Therefore, the CMU-MOSEI dataset is chosen to run experiments.
+
+### Differences with the original code
+
+
+|            | Original Code                     | Current Code                                                   |
+|------------|-----------------------------------|----------------------------------------------------------------|
+| **Inputs** | Only training and validation sets | Standard training, validation and test sets from CMU-MOSEI SDK |
+
+
+### How to run the code
 1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
-2. Follow the instructions below using **Python 3.9.7**.
+2. Run as follows:
+```commandline
+python3 main.py [-FLAGS]
+```
+
+#### List of the flags
+
+| Flag name         | Values | Description                                                                             | Default                 |
+|-------------------|--------|-----------------------------------------------------------------------------------------|-------------------------|
+| pickle_name       | str    | Name of the pickle object that will contain the CMU-MOSEI mmdataset                     | cmu_mosei_aligned       |
+| pickle_folder     | str    | Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset | cmu_mosei/pickle_files/ |
+| align_text        | {0, 1} | Whether we want data to align to the textual modality. 1 for True and 0 for False       | 1                       |
+| align_label       | {0, 1} | Whether we want data to align to the labels. 1 for True and 0 for False                 | 1                       |
+| with_custom_split | {0, 1} | Whether we want to perform custom split (cf. paper). 1 for True and 0 for False         | 0                       |
+
 
 *The remainder of this README is written by the original authors.*
+
+------------------------------------------
 
 # MultimodalDNN
 
