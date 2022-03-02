@@ -40,10 +40,8 @@
 
 
 def custom_split(train, valid):
-    valid = list(valid)
-    train = list(train)
     total = len(valid)
-    half = total / 2
+    half = total // 2
     valid_ids_list = valid[:half]
     test_ids_list = valid[half + 1:]
     # 5 % of training into test data

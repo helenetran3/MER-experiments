@@ -15,10 +15,11 @@ parser.add_argument('-pickle_name', type=str, default="cmu_mosei_aligned",
 parser.add_argument('-pickle_folder', type=str, default="cmu_mosei/pickle_files/",
                     help="Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset "
                          "(default: cmu_mosei/pickle_files/)")
-parser.add_argument('-align_text', type=int, choices=range(0, 2), default=1,
+parser.add_argument('-align_to_text', type=int, choices=range(0, 2), default=1,
                     help="Whether we want data to align to the textual modality. 1 for True (default) and 0 for False")
-parser.add_argument('-align_label', type=int, choices=range(0, 2), default=1,
-                    help="Whether we want data to align to the labels. 1 for True (default) and 0 for False")
+parser.add_argument('-append_label_to_data', type=int, choices=range(0, 2), default=1,
+                    help="Whether we want data to append annotations to the dataset. 1 for True (default) and 0 for "
+                         "False")
 parser.add_argument('-with_custom_split', type=int, choices=range(0, 2), default=0,
                     help="Whether we want to perform custom split (cf. paper). 1 for True and 0 for False (default)")
 args = parser.parse_args()
@@ -29,8 +30,8 @@ def main():
 
     # Download CMU-MOSEI dataset using SDK and save with pickle
     if not os.path.exists(pickle_path):
-        download_dataset(args.pickle_name, pickle_folder=args.pickle_folder, align_text=args.align_text,
-                         align_label=args.align_label)
+        download_dataset(args.pickle_name, pickle_folder=args.pickle_folder, align_to_text=args.align_to_text,
+                         append_label_to_data=args.append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
     cmu_mosei = load_dataset_pickle(args.pickle_name, pickle_folder=args.pickle_folder)

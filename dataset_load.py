@@ -15,14 +15,14 @@ def avg_collapse_function(intervals, features):
 
 # CMU-MOSEI DATA DOWNLOAD FUNCTIONS
 
-def download_dataset(pickle_name, pickle_folder, align_text, align_label):
+def download_dataset(pickle_name, pickle_folder, align_to_text, append_label_to_data):
     """
     Download CMU-MOSEI dataset using the SDK and perform data alignment (if desired).
 
     :param pickle_name: name of the pickle object that will contain the CMU-MOSEI mmdataset
     :param pickle_folder: name of the folder where to save the pickle object
-    :param align_text: whether we want data to align to the textual modality
-    :param align_label: whether we want data to align to the labels
+    :param align_to_text: whether we want data to align to the textual modality
+    :param append_label_to_data: whether we want data to align to the labels
     """
 
     pickle_name += ".pkl"
@@ -42,10 +42,10 @@ def download_dataset(pickle_name, pickle_folder, align_text, align_label):
             # Download data and add them to cmu_mosei folder
             cmu_mosei = mmdatasdk.mmdataset(mmdatasdk.cmu_mosei.highlevel, 'cmu_mosei/')
 
-        if align_text:
+        if align_to_text:
             cmu_mosei.align('glove_vectors', collapse_functions=[avg_collapse_function])
 
-        if align_label:
+        if append_label_to_data:
             cmu_mosei.add_computational_sequences(mmdatasdk.cmu_mosei.labels, 'cmu_mosei/')
             cmu_mosei.align('All Labels')
 

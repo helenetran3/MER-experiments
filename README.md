@@ -19,13 +19,13 @@ python3 main.py [-FLAGS]
 
 #### List of the flags
 
-| Flag name         | Values | Description                                                                             | Default                 |
-|-------------------|--------|-----------------------------------------------------------------------------------------|-------------------------|
-| pickle_name       | str    | Name of the pickle object that will contain the CMU-MOSEI mmdataset                     | cmu_mosei_aligned       |
-| pickle_folder     | str    | Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset | cmu_mosei/pickle_files/ |
-| align_text        | {0, 1} | Whether we want data to align to the textual modality. 1 for True and 0 for False       | 1                       |
-| align_label       | {0, 1} | Whether we want data to align to the labels. 1 for True and 0 for False                 | 1                       |
-| with_custom_split | {0, 1} | Whether we want to perform custom split (cf. paper). 1 for True and 0 for False         | 0                       |
+| Flag name            | Values | Description                                                                             | Default                 |
+|----------------------|--------|-----------------------------------------------------------------------------------------|-------------------------|
+| pickle_name          | str    | Name of the pickle object that will contain the CMU-MOSEI mmdataset                     | cmu_mosei_aligned       |
+| pickle_folder        | str    | Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset | cmu_mosei/pickle_files/ |
+| align_to_text        | {0, 1} | Whether we want data to align to the textual modality. 1 for True and 0 for False       | 1                       |
+| append_label_to_data | {0, 1} | Whether we want data to append annotations to the dataset. 1 for True and 0 for False   | 1                       |
+| with_custom_split    | {0, 1} | Whether we want to perform custom split (cf. paper). 1 for True and 0 for False         | 0                       |
 
 
 *The remainder of this README is written by the original authors.*
