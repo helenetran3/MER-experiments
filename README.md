@@ -1,16 +1,27 @@
-**Note from helenetran3:** This forked repository is intended to update the code and make it run with Python 3. This README will be updated once the code works using the current version of [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). 
+# Updated version of [Multimodal DNN](https://github.com/rhoposit/MultimodalDNN)
 
-Only the code for **emotion recognition** is updated. Therefore, the CMU-MOSEI dataset is chosen to run experiments.
+:dart: This repository is intended to update the code of [Multimodal DNN](https://github.com/rhoposit/MultimodalDNN) and make 
+it run with Python 3 and the current version of [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). 
+This README will be updated once the code works. Thank you for your interest!
 
-### Differences with the original code
+Paper: [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion](http://www.aclweb.org/anthology/W18-3302)
 
+Please cite the paper of the original authors if the code was useful to you:
+```
+@inproceedings{williams2018a,
+  title     = "Recognizing Emotions in Video Using Multimodal DNN Feature Fusion",
+  author    = "Jennifer Williams and Steven Kleinegesse and Ramona Comanescu and Oana Radu",
+  year      = "2018",
+  pages     = "11--19",
+  booktitle = "Proceedings of Grand Challenge and Workshop on Human Multimodal Language (Challenge-HML)",
+  publisher = "Association for Computational Linguistics",
+}
+```
 
-|            | Original Code                     | Current Code                                                   |
-|------------|-----------------------------------|----------------------------------------------------------------|
-| **Inputs** | Only training and validation sets | Standard training, validation and test sets from CMU-MOSEI SDK |
+Note that we only focus on the code for **multimodal emotion recognition** using CMU-MOSEI dataset. Some slight changes
+have been made from the original repository (cf. [Differences with the original code](#Differences-with-the-original-code) section).
 
-
-### How to run the code
+## How to run the code
 1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
 2. Run as follows:
 ```commandline
@@ -30,68 +41,11 @@ python3 main.py [-FLAGS]
 
 
 
-*The remainder of this README is written by the original authors.*
-
-------------------------------------------
-
-# MultimodalDNN
-
-This repository provides code from the University of Edinburgh Team G25 for the ACL 2018 [Workshop on Human Multimodal Language](http://multicomp.cs.cmu.edu/acl2018multimodalchallenge/).
-
-### EMOTION - First Place in Emotion Recognition Challenge (all metrics) using MOSEI data
-
-Paper: [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion](http://www.aclweb.org/anthology/W18-3302)
-
-Code: emotion_recognition.py
-
-Run: `emotion_recognition.py [mode]`
-
-Where `[mode]` specifies the multimodal inputs (A=Audio, V=Video, T=Text): `all`, `AV`, `AT`, `VT`, `V`, `T`, or `A`
-
-This script will run a sweep of all parameters described in our paper, including number of BLSTM layers and dropout rates. It is designed to run the sweep in parallel and thus requires a significant compute resource. 
-
-To cite (BibTeX):
-```
-@inproceedings{williams2018a,
-  title     = "Recognizing Emotions in Video Using Multimodal DNN Feature Fusion",
-  author    = "Jennifer Williams and Steven Kleinegesse and Ramona Comanescu and Oana Radu",
-  year      = "2018",
-  pages     = "11--19",
-  booktitle = "Proceedings of Grand Challenge and Workshop on Human Multimodal Language (Challenge-HML)",
-  publisher = "Association for Computational Linguistics",
-}
-```
-
-### SENTIMENT - Multimodal Sentiment Analysis using MOSI data
-
-Paper: [DNN Multimodal Fusion Techniques for Predicting Video Sentiment](http://www.aclweb.org/anthology/W18-3309)
-
-Code: MOSI_*.py
-
-Run: `MOSI_*.py [mode] [task]`
-
-Where `[mode]` specifies the multimodal inputs (A=Audio, V=Video, T=Text): `all`, `AV`, `AT`, `VT`, `V`, `T`, or `A`
-and `[task]` specifies if the task is binary, 5-class, or regression.
-
-This script will run a sweep of all parameters described in our paper.
+## Differences with the original code
 
 
-To cite (BibTeX):
-```
-@inproceedings{williams2018b,
-  title     = "DNN Multimodal Fusion Techniques for Predicting Video Sentiment",
-  author    = "Jennifer Williams and Ramona Comanescu and Oana Radu and Leimin Tian",
-  year      = "2018",
-  pages     = "64--72",
-  booktitle = "Proceedings of Grand Challenge and Workshop on Human Multimodal Language (Challenge-HML)",
-  publisher = "Association for Computational Linguistics",
-}
-```
+|            | Original Code                     | Current Code                                                   |
+|------------|-----------------------------------|----------------------------------------------------------------|
+| **Inputs** | Only training and validation sets | Standard training, validation and test sets from CMU-MOSEI SDK |
 
 
-### Notes:
-1. Our code is designed to interface with the [CMU MultiModalDataSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). Do cite their dataset along with our paper.
-2. To work with the MOSEI dataset in particular, the dataset is currently very large, and you require a large amount of RAM 
-3. If you have questions about this code, please open an issue on this repository. 
-4. If you have questions related to the data itself, please contact the CMU team.
-5. This code is provided as-is, and is the code used for our University of Edinburgh Team G25 submission.
