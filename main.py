@@ -1,5 +1,4 @@
-from dataset_load import download_dataset, load_dataset_pickle, get_fold_ids
-from emotion_recognition_clean import custom_split
+from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, custom_split
 import argparse
 import os
 
@@ -22,6 +21,8 @@ parser.add_argument('-append_label_to_data', type=int, choices=range(0, 2), defa
                          "False")
 parser.add_argument('-with_custom_split', type=int, choices=range(0, 2), default=0,
                     help="Whether we want to perform custom split (cf. paper). 1 for True and 0 for False (default)")
+parser.add_argument('-val_metric', type=str, choices=['loss', 'acc'], default='loss',
+                    help="Metric to monitor for validation set. Values: loss (default) or acc.")
 args = parser.parse_args()
 
 
@@ -34,7 +35,9 @@ def main():
                          append_label_to_data=args.append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
-    cmu_mosei = load_dataset_pickle(args.pickle_name, pickle_folder=args.pickle_folder)
+    dataset = load_dataset_from_pickle(args.pickle_name, pickle_folder=args.pickle_folder)
+    print("CMU-MOSEI dataset loaded")
+    print("The existing computational sequences in dataset are: {}".format(list(dataset.keys())))
 
     # Get standard train, valid and test folds
     train_ids, valid_ids, test_ids = get_fold_ids()

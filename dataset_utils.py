@@ -6,11 +6,15 @@ from mmsdk import mmdatasdk
 
 # COLLAPSE FUNCTIONS FOR DATA ALIGNMENT
 
-def avg_collapse_function(intervals, features):
+def avg_collapse_function(intervals: np.array, features: np.array) -> np.array:
     """
     Collapse function using average for visual and vocal modality alignment to textual modality.
+    It only averages modality when it is possible (not the case for text modality).
     """
-    return np.average(features, axis=0)
+    try:
+        return np.average(features, axis=0)
+    except:
+        return features
 
 
 # CMU-MOSEI DATA DOWNLOAD FUNCTIONS
@@ -54,7 +58,7 @@ def download_dataset(pickle_name, pickle_folder, align_to_text, append_label_to_
             pickle.dump(cmu_mosei, fw)
 
 
-def load_dataset_pickle(pickle_name, pickle_folder):
+def load_dataset_from_pickle(pickle_name, pickle_folder):
     """
     Load CMU-MOSEI data from pickle file.
 
@@ -72,6 +76,8 @@ def load_dataset_pickle(pickle_name, pickle_folder):
     return cmu_mosei
 
 
+# CMU-MOSEI DATA SPLIT INTO TRAINING, VALIDATION AND TEST SETS
+
 def get_fold_ids():
     """
     Get CMU-MOSEI standard fold ids for training, validation, and test
@@ -79,8 +85,40 @@ def get_fold_ids():
     :return: 3 lists of ids for training, validation, and test sets respectively
     """
 
-    train_id = mmdatasdk.cmu_mosei.standard_folds.standard_train_fold
-    valid_id = mmdatasdk.cmu_mosei.standard_folds.standard_valid_fold
-    test_id = mmdatasdk.cmu_mosei.standard_folds.standard_test_fold
+    train_ids = mmdatasdk.cmu_mosei.standard_folds.standard_train_fold
+    valid_ids = mmdatasdk.cmu_mosei.standard_folds.standard_valid_fold
+    test_ids = mmdatasdk.cmu_mosei.standard_folds.standard_test_fold
 
-    return train_id, valid_id, test_id
+    return train_ids, valid_ids, test_ids
+
+
+def custom_split(train, valid):
+    """
+    Create three sets (training, validation and test) based on two sets (training and validation).
+    Final training set:   85% of original training data
+    Final validation set: 10% of original training data and 50% of validation data
+    Final test set:        5% of original training data and 50% of validation data
+
+    :param train: list of ids for training set
+    :param valid: list of ids for validation set
+    :return: 3 lists of ids for training, validation, and test sets respectively
+    """
+    total = len(valid)
+    half = total // 2
+    valid_ids_list = valid[:half]
+    test_ids_list = valid[half + 1:]
+    # 5 % of training into test data
+    five_p = int(len(train) * 0.05)
+    train_ids_list = train[:-five_p]
+    test_ids_list = test_ids_list + train[-five_p:]
+    # 10% of leftover training into valid data
+    ten_p = int(len(train_ids_list) * 0.1)
+    train_ids_list = train_ids_list[:-ten_p]
+    valid_ids_list = valid_ids_list + train_ids_list[-ten_p:]
+    return train_ids_list, valid_ids_list, test_ids_list
+
+
+# TODO: Create vectors of shape (dataset_size, max_len, feature_dim) for all sets
+# def split_dataset(dataset, train_ids, valid_ids, test_ids, mode, max_len):
+#
+#     return x_train, x_valid, x_test, y_train, y_valid, y_test
