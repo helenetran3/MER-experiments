@@ -20,9 +20,12 @@ parser.add_argument('-append_label_to_data', type=int, choices=range(0, 2), defa
                     help="Whether we want data to append annotations to the dataset. 1 for True (default) and 0 for "
                          "False")
 parser.add_argument('-with_custom_split', type=int, choices=range(0, 2), default=0,
-                    help="Whether we want to perform custom split (cf. paper). 1 for True and 0 for False (default)")
+                    help="Whether we want to perform custom split on training and validation sets (for more details, "
+                         "cf. paper). 1 for True and 0 for False (default)")
 parser.add_argument('-val_metric', type=str, choices=['loss', 'acc'], default='loss',
                     help="Metric to monitor for validation set. Values: loss (default) or acc.")
+parser.add_argument('-image_feature', type=str, choices=['facet', 'openface'], default='facet',
+                    help="Image features. Values: facet (default) or openface.")
 args = parser.parse_args()
 
 
