@@ -18,8 +18,10 @@ Please cite the paper of the original authors if the code was useful to you:
 }
 ```
 
-Note that we only focus on the code for **multimodal emotion recognition** using CMU-MOSEI dataset. Some slight changes
-have been made from the original repository (cf. [Differences with the original code](#Differences-with-the-original-code) section).
+Note that we only focus on the code for **multimodal emotion recognition** using CMU-MOSEI dataset. The handcrafted 
+features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), **COVAREP** (audio), 
+**glove_vectors** (text). Some slight changes have been made from the original repository 
+(cf. [Differences with the original code](#Differences-with-the-original-code) section).
 
 ## How to run the code
 1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
@@ -32,7 +34,8 @@ python3 main.py [-FLAGS]
 
 | Flag name            | Values            | Description                                                                                                                       | Default                 |
 |----------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------|-------------------------|
-| pickle_name          | str               | Name of the pickle object that will contain the CMU-MOSEI mmdataset                                                               | cmu_mosei_aligned       |
+| dataset_folder       | str               | Name of the folder where the CMU-MOSEI mmdataset will be downloaded                                                               | cmu_mosei/              |
+| pickle_name          | str               | Name of the pickle object that will contain the CMU-MOSEI mmdataset                                                               | cmu_mosei               |
 | pickle_folder        | str               | Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset                                           | cmu_mosei/pickle_files/ |
 | align_to_text        | {0, 1}            | Whether we want data to align to the textual modality. 1 for True and 0 for False                                                 | 1 (True)                |
 | append_label_to_data | {0, 1}            | Whether we want data to append annotations to the dataset. 1 for True and 0 for False                                             | 1 (True)                |

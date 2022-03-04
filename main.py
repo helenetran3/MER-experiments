@@ -1,4 +1,4 @@
-from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, custom_split
+from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, custom_split, split_dataset
 import argparse
 import os
 
@@ -8,7 +8,9 @@ parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSE
                                              "Recognizing Emotions in Video Using Multimodal DNN Feature Fusion. In "
                                              "Proceedings of Grand Challenge and Workshop on Human Multimodal "
                                              "Language (Challenge-HML) (pp. 11-19).")
-parser.add_argument('-pickle_name', type=str, default="cmu_mosei_aligned",
+parser.add_argument('-dataset_folder', type=str, default="cmu_mosei/",
+                    help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded (default: cmu_mosei/)")
+parser.add_argument('-pickle_name', type=str, default="cmu_mosei",
                     help="Name of the pickle object that will contain the CMU-MOSEI mmdataset (default: "
                          "cmu_mosei_aligned)")
 parser.add_argument('-pickle_folder', type=str, default="cmu_mosei/pickle_files/",
@@ -34,7 +36,10 @@ def main():
 
     # Download CMU-MOSEI dataset using SDK and save with pickle
     if not os.path.exists(pickle_path):
-        download_dataset(args.pickle_name, pickle_folder=args.pickle_folder, align_to_text=args.align_to_text,
+        download_dataset(dataset_folder=args.dataset_folder,
+                         pickle_name=args.pickle_name,
+                         pickle_folder=args.pickle_folder,
+                         align_to_text=args.align_to_text,
                          append_label_to_data=args.append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
@@ -47,6 +52,8 @@ def main():
     if args.with_custom_split:
         train_ids_cs, valid_ids_cs, test_ids_cs = custom_split(train_ids, valid_ids)
         train_ids, valid_ids, test_ids = train_ids_cs, valid_ids_cs, test_ids_cs + test_ids
+
+    train, valid, test = split_dataset(dataset, train_ids, valid_ids, test_ids, args.image_feature)
 
 
 if __name__ == "__main__":

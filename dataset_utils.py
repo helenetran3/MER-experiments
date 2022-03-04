@@ -1,7 +1,9 @@
 import os
+import re
 import pickle
 import numpy as np
 from mmsdk import mmdatasdk
+from collections import defaultdict
 
 
 # COLLAPSE FUNCTIONS FOR DATA ALIGNMENT
@@ -19,10 +21,11 @@ def avg_collapse_function(intervals: np.array, features: np.array) -> np.array:
 
 # CMU-MOSEI DATA DOWNLOAD FUNCTIONS
 
-def download_dataset(pickle_name, pickle_folder, align_to_text, append_label_to_data):
+def download_dataset(dataset_folder, pickle_name, pickle_folder, align_to_text, append_label_to_data):
     """
     Download CMU-MOSEI dataset using the SDK and perform data alignment (if desired).
 
+    :param dataset_folder: name of the folder where the CMU-MOSEI mmdataset will be downloaded
     :param pickle_name: name of the pickle object that will contain the CMU-MOSEI mmdataset
     :param pickle_folder: name of the folder where to save the pickle object
     :param align_to_text: whether we want data to align to the textual modality
@@ -41,16 +44,16 @@ def download_dataset(pickle_name, pickle_folder, align_to_text, append_label_to_
     else:
         if os.path.exists('cmu_mosei'):
             # Retrieve data from cmu_mosei folder
-            cmu_mosei = mmdatasdk.mmdataset('cmu_mosei/')
+            cmu_mosei = mmdatasdk.mmdataset(dataset_folder)
         else:
             # Download data and add them to cmu_mosei folder
-            cmu_mosei = mmdatasdk.mmdataset(mmdatasdk.cmu_mosei.highlevel, 'cmu_mosei/')
+            cmu_mosei = mmdatasdk.mmdataset(mmdatasdk.cmu_mosei.highlevel, dataset_folder)
 
         if align_to_text:
             cmu_mosei.align('glove_vectors', collapse_functions=[avg_collapse_function])
 
         if append_label_to_data:
-            cmu_mosei.add_computational_sequences(mmdatasdk.cmu_mosei.labels, 'cmu_mosei/')
+            cmu_mosei.add_computational_sequences(mmdatasdk.cmu_mosei.labels, dataset_folder)
             cmu_mosei.align('All Labels')
 
         # Save cmu_mosei mmdataset with pickle
@@ -118,71 +121,89 @@ def custom_split(train, valid):
     return train_ids_list, valid_ids_list, test_ids_list
 
 
-# TODO Check if the code is correct
-def pad(data, max_len):
-    """A function for padding/truncating sequence data to a given length"""
-    # recall that data at each time step is a tuple (start_time, end_time, feature_vector), we only take the vector
-    data = np.array([feature[2] for feature in data])
-    n_rows = data.shape[0]
-    dim = data.shape[1]
-    if max_len >= n_rows:
-        diff = max_len - n_rows
-        padding = np.zeros((diff, dim))
-        padded = np.concatenate((padding, data))
-        return padded
-    else:
-        new_data = data[-max_len:]
-        return new_data
-
-
-# TODO: Create vectors of shape (dataset_size, max_len, feature_dim) for all sets
-def split_dataset(dataset, train_ids, valid_ids, test_ids, max_len, image_feature):
+def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     """
-    Create arrays for training, validation and test sets + labels
+    Create 3 lists of arrays for training, validation and test sets.
+    (Followed tutorial https://github.com/Justin1904/CMU-MultimodalSDK-Tutorials/blob/master/tutorial_interactive.ipynb)
 
     :param dataset: CMU-MOSEI mmdataset
     :param train_ids: list of training ids
     :param valid_ids: list of validation ids
     :param test_ids: list of test ids
-    :param max_len: maximum length for all sequences
     :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
-    :return: 6 arrays x_train, x_valid, x_test, y_train, y_valid, y_test of shape (dataset_size, max_len, feature_dim)
+    :return: 3 lists of training, validation and test sets containing tuples (text_seg, image_seg, audio_seg, label_seg, segment)
     """
+
+    # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
+    EPS = 0
+
+    # Placeholders for training, validation, and test sets
+    train = []
+    valid = []
+    test = []
+
     image_feature_id = 'FACET 4.2' if image_feature == 'facet' else 'OpenFace_2'
     image_dataset = dataset[image_feature_id]
     audio_dataset = dataset['COVAREP']
     text_dataset = dataset['glove_vectors']
+    label_dataset = dataset['All Labels']
 
-    # From the list of train_ids, keep only those which exist in the dataset
-    train_data = []
-    for vid in train_ids:
-        if vid in image_dataset.keys() and vid in audio_dataset.keys() and vid in text_dataset.keys() and \
-                'intervals' in image_dataset[vid].keys() and 'features' in image_dataset[vid].keys() and \
-                'intervals' in audio_dataset[vid].keys() and 'features' in audio_dataset[vid].keys() and \
-                'intervals' in text_dataset[vid].keys() and 'features' in text_dataset[vid].keys():
-            train_data.append(vid)
+    pattern = re.compile('(.*)\[.*\]')
+    num_drop = 0  # counter to get the number of data points that doesn't go through the checking process
+    num_no_split = 0  # counter for those that doesn't belong to any split
 
-    # From the list of valid_ids, keep only those which exist in the dataset
-    valid_data = []
-    for vid in valid_ids:
-        if vid in image_dataset.keys() and vid in audio_dataset.keys() and vid in text_dataset.keys() and \
-                'intervals' in image_dataset[vid].keys() and 'features' in image_dataset[vid].keys() and \
-                'intervals' in audio_dataset[vid].keys() and 'features' in audio_dataset[vid].keys() and \
-                'intervals' in text_dataset[vid].keys() and 'features' in text_dataset[vid].keys():
-            valid_data.append(vid)
+    for segment in dataset['All Labels'].keys():
 
-    # From the list of test_ids, keep only those which exist in the dataset
-    test_data = []
-    for vid in test_ids:
-        if vid in image_dataset.keys() and vid in audio_dataset.keys() and vid in text_dataset.keys() and \
-                'intervals' in image_dataset[vid].keys() and 'features' in image_dataset[vid].keys() and \
-                'intervals' in audio_dataset[vid].keys() and 'features' in audio_dataset[vid].keys() and \
-                'intervals' in text_dataset[vid].keys() and 'features' in text_dataset[vid].keys():
-            test_data.append(vid)
+        # Get video id and its image, audio, text and label features
+        vid = re.search(pattern, segment).group(1)
 
-    # TODO: Padding and truncat sequences to max_len, concat, normalise and remove NaN values, final concat
-    # image_dataset_vid = image_dataset[vid]['features']
-    # audio_dataset_vid = audio_dataset[vid]['features']
-    # text_dataset_vid = text_dataset[vid]['features']
+        if not (segment in image_dataset.keys() and segment in audio_dataset.keys() and segment in text_dataset.keys()):
+            print("Encountered datapoint {} that does not appear in image, audio, or text dataset.".format(segment))
+            num_drop += 1
+            continue
 
-    # return x_train, x_valid, x_test, y_train, y_valid, y_test
+        image_seg = image_dataset[segment]['features']
+        audio_seg = audio_dataset[segment]['features']
+        text_seg = text_dataset[segment]['features']
+        label_seg = label_dataset[segment]['features']
+
+        if not image_seg.shape[0] == audio_seg.shape[0] == text_seg.shape[0]:
+            print("Encountered datapoint {} with image shape {}, audio shape {} and text shape {}."
+                  .format(segment, image_seg.shape, audio_seg.shape, text_seg.shape))
+            num_drop += 1
+            continue
+
+        # Remove nan values
+        image_seg = np.nan_to_num(image_seg)
+        audio_seg = np.nan_to_num(audio_seg)
+        label_seg = np.nan_to_num(label_seg)
+
+        # z-normalization per instance and remove nan/infs
+        image_seg = np.nan_to_num(
+            (image_seg - image_seg.mean(0, keepdims=True)) / (EPS + np.std(image_seg, axis=0, keepdims=True)))
+        audio_seg = np.nan_to_num(
+            (audio_seg - audio_seg.mean(0, keepdims=True)) / (EPS + np.std(audio_seg, axis=0, keepdims=True)))
+
+        if vid in train_ids:
+            train.append((text_seg, image_seg, audio_seg, label_seg, segment))
+        elif vid in valid_ids:
+            valid.append((text_seg, image_seg, audio_seg, label_seg, segment))
+        elif vid in test_ids:
+            test.append((text_seg, image_seg, audio_seg, label_seg, segment))
+        else:
+            print("Encountered video {} that does not belong to any split.".format(vid))
+            num_no_split += 1
+
+    print("----------------------------------------------------")
+    print("Split dataset complete!")
+    total_data_split = len(train) + len(valid) + len(test)
+    total_data = total_data_split + num_drop + num_no_split
+    print("Total number of {} datapoints have been dropped ({:.2f}% of total data)."
+          .format(num_drop, 100*(num_drop / total_data)))
+    print("Total number of {} datapoints do not belong to any split ({:.2f}% of total data)."
+          .format(num_no_split, 100*(num_no_split / total_data)))
+    print("Number of training datapoints: {} ({:.2f}%)".format(len(train), 100*(len(train) / total_data_split)))
+    print("Number of validation datapoints: {} ({:.2f}%)".format(len(valid), 100*(len(valid) / total_data_split)))
+    print("Number of test datapoints: {} ({:.2f}%)".format(len(test), 100*(len(test) / total_data_split)))
+
+    return train, valid, test
