@@ -6,9 +6,9 @@ from keras.callbacks import EarlyStopping
 from sklearn.metrics import mean_absolute_error
 
 
-def build_model(x_train, n_layers, n_steps, n_nodes, dropout_rate, final_activ="linear"):
+def build_model(x_train, n_layers, n_steps, n_nodes, dropout_rate, final_activ):
     """
-    Build the model described in the paper (cf. README).
+    Build the model described in the paper (cf. README for the reference).
 
     :param x_train: training data
     :param n_layers: number of layers
@@ -53,6 +53,8 @@ def build_model(x_train, n_layers, n_steps, n_nodes, dropout_rate, final_activ="
 
     return model
 
+
+# def run_model_training(train_list, valid_list, test_list, n_steps, n_nodes, dropout_rate, final_activ): # final_activ="linear"
 
 # def run_model_training(x_train, x_valid, x_test, y_train, y_valid, y_test, n_steps, dropout_rate, n_layers, n_nodes,
 #                        epochs, batch_size, mode, val_method, val_mode, final_activ='linear'):

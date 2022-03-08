@@ -3,7 +3,7 @@ import re
 import pickle
 import numpy as np
 from mmsdk import mmdatasdk
-from collections import defaultdict
+from sklearn.utils import shuffle
 
 
 # COLLAPSE FUNCTIONS FOR DATA ALIGNMENT
@@ -131,8 +131,8 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     :param valid_ids: list of validation ids
     :param test_ids: list of test ids
     :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
-    :return: 3 lists of training, validation and test sets containing tuples of structure
-            ((text_seg, image_seg, audio_seg), label_seg, segment)
+    :return: 3 lists of training, validation and test sets containing lists of structure
+            [text_seg, image_seg, audio_seg, label_seg, seg_id]
     """
 
     # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
@@ -153,24 +153,24 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     num_drop = 0  # counter to get the number of data points that doesn't go through the checking process
     num_no_split = 0  # counter for those that doesn't belong to any split
 
-    for segment in dataset['All Labels'].keys():
+    for seg_id in dataset['All Labels'].keys():
 
         # Get video id and its image, audio, text and label features
-        vid = re.search(pattern, segment).group(1)
+        vid = re.search(pattern, seg_id).group(1)
 
-        if not (segment in image_dataset.keys() and segment in audio_dataset.keys() and segment in text_dataset.keys()):
-            print("Encountered datapoint {} that does not appear in image, audio, or text dataset.".format(segment))
+        if not (seg_id in image_dataset.keys() and seg_id in audio_dataset.keys() and seg_id in text_dataset.keys()):
+            print("Encountered datapoint {} that does not appear in image, audio, or text dataset.".format(seg_id))
             num_drop += 1
             continue
 
-        image_seg = image_dataset[segment]['features']
-        audio_seg = audio_dataset[segment]['features']
-        text_seg = text_dataset[segment]['features']
-        label_seg = label_dataset[segment]['features']
+        image_seg = image_dataset[seg_id]['features']
+        audio_seg = audio_dataset[seg_id]['features']
+        text_seg = text_dataset[seg_id]['features']
+        label_seg = label_dataset[seg_id]['features']
 
         if not image_seg.shape[0] == audio_seg.shape[0] == text_seg.shape[0]:
             print("Encountered datapoint {} with image shape {}, audio shape {} and text shape {}."
-                  .format(segment, image_seg.shape, audio_seg.shape, text_seg.shape))
+                  .format(seg_id, image_seg.shape, audio_seg.shape, text_seg.shape))
             num_drop += 1
             continue
 
@@ -186,13 +186,13 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
             (audio_seg - audio_seg.mean(0, keepdims=True)) / (EPS + np.std(audio_seg, axis=0, keepdims=True)))
 
         if vid in train_ids:
-            train.append(((text_seg, image_seg, audio_seg), label_seg, segment))
+            train.append([text_seg, image_seg, audio_seg, label_seg, seg_id])
         elif vid in valid_ids:
-            valid.append(((text_seg, image_seg, audio_seg), label_seg, segment))
+            valid.append([text_seg, image_seg, audio_seg, label_seg, seg_id])
         elif vid in test_ids:
-            test.append(((text_seg, image_seg, audio_seg), label_seg, segment))
+            test.append([text_seg, image_seg, audio_seg, label_seg, seg_id])
         else:
-            print("Encountered video {} that does not belong to any split.".format(vid))
+            # print("Encountered video {} that does not belong to any split.".format(vid))
             num_no_split += 1
 
     print("----------------------------------------------------")
@@ -200,11 +200,31 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     total_data_split = len(train) + len(valid) + len(test)
     total_data = total_data_split + num_drop + num_no_split
     print("Total number of {} datapoints have been dropped ({:.2f}% of total data)."
-          .format(num_drop, 100*(num_drop / total_data)))
+          .format(num_drop, 100 * (num_drop / total_data)))
     print("Total number of {} datapoints do not belong to any split ({:.2f}% of total data)."
-          .format(num_no_split, 100*(num_no_split / total_data)))
-    print("Number of training datapoints: {} ({:.2f}%)".format(len(train), 100*(len(train) / total_data_split)))
-    print("Number of validation datapoints: {} ({:.2f}%)".format(len(valid), 100*(len(valid) / total_data_split)))
-    print("Number of test datapoints: {} ({:.2f}%)".format(len(test), 100*(len(test) / total_data_split)))
+          .format(num_no_split, 100 * (num_no_split / total_data)))
+    print("Number of training datapoints: {} ({:.2f}%)".format(len(train), 100 * (len(train) / total_data_split)))
+    print("Number of validation datapoints: {} ({:.2f}%)".format(len(valid), 100 * (len(valid) / total_data_split)))
+    print("Number of test datapoints: {} ({:.2f}%)".format(len(test), 100 * (len(test) / total_data_split)))
 
     return train, valid, test
+
+
+def yield_datapoints(datapoint_list, random_state):
+    """
+
+    :param datapoint_list: list of datapoints containing lists of [text_seg, image_seg, audio_seg, label_seg, seg_id]
+    :param random_state: random state for data shuffle
+    :return: yields 1 array of shape (3, num_datapoints), 1 label and 1 segment id iteratively
+    """
+    datapoint_array = np.array(datapoint_list)
+    X = datapoint_array[:, :3]
+    y = datapoint_array[:, 3]
+    seg_id = datapoint_array[:, 4]
+    num_data = datapoint_array.shape[0]
+
+    X_s, y_s, seg_id_s = shuffle(X, y, seg_id, random_state=random_state)
+
+    for i in range(num_data):
+
+        yield X_s[i], y_s[i], seg_id_s[i]
