@@ -131,7 +131,8 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     :param valid_ids: list of validation ids
     :param test_ids: list of test ids
     :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
-    :return: 3 lists of training, validation and test sets containing tuples (text_seg, image_seg, audio_seg, label_seg, segment)
+    :return: 3 lists of training, validation and test sets containing tuples of structure
+            ((text_seg, image_seg, audio_seg), label_seg, segment)
     """
 
     # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
@@ -185,11 +186,11 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
             (audio_seg - audio_seg.mean(0, keepdims=True)) / (EPS + np.std(audio_seg, axis=0, keepdims=True)))
 
         if vid in train_ids:
-            train.append((text_seg, image_seg, audio_seg, label_seg, segment))
+            train.append(((text_seg, image_seg, audio_seg), label_seg, segment))
         elif vid in valid_ids:
-            valid.append((text_seg, image_seg, audio_seg, label_seg, segment))
+            valid.append(((text_seg, image_seg, audio_seg), label_seg, segment))
         elif vid in test_ids:
-            test.append((text_seg, image_seg, audio_seg, label_seg, segment))
+            test.append(((text_seg, image_seg, audio_seg), label_seg, segment))
         else:
             print("Encountered video {} that does not belong to any split.".format(vid))
             num_no_split += 1

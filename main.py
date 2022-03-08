@@ -8,25 +8,25 @@ parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSE
                                              "Recognizing Emotions in Video Using Multimodal DNN Feature Fusion. In "
                                              "Proceedings of Grand Challenge and Workshop on Human Multimodal "
                                              "Language (Challenge-HML) (pp. 11-19).")
-parser.add_argument('-dataset_folder', type=str, default="cmu_mosei/",
+parser.add_argument('-df', '--dataset_folder', type=str, default="cmu_mosei/",
                     help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded (default: cmu_mosei/)")
-parser.add_argument('-pickle_name', type=str, default="cmu_mosei",
+parser.add_argument('-pn', '--pickle_name', type=str, default="cmu_mosei",
                     help="Name of the pickle object that will contain the CMU-MOSEI mmdataset (default: "
                          "cmu_mosei_aligned)")
-parser.add_argument('-pickle_folder', type=str, default="cmu_mosei/pickle_files/",
+parser.add_argument('-pf', '--pickle_folder', type=str, default="cmu_mosei/pickle_files/",
                     help="Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset "
                          "(default: cmu_mosei/pickle_files/)")
-parser.add_argument('-align_to_text', type=int, choices=range(0, 2), default=1,
+parser.add_argument('-t', '--align_to_text', type=int, choices=range(0, 2), default=1,
                     help="Whether we want data to align to the textual modality. 1 for True (default) and 0 for False")
-parser.add_argument('-append_label_to_data', type=int, choices=range(0, 2), default=1,
+parser.add_argument('-l', '--append_label_to_data', type=int, choices=range(0, 2), default=1,
                     help="Whether we want data to append annotations to the dataset. 1 for True (default) and 0 for "
                          "False")
-parser.add_argument('-with_custom_split', type=int, choices=range(0, 2), default=0,
+parser.add_argument('-c', '--with_custom_split', type=int, choices=range(0, 2), default=0,
                     help="Whether we want to perform custom split on training and validation sets (for more details, "
                          "cf. paper). 1 for True and 0 for False (default)")
-parser.add_argument('-val_metric', type=str, choices=['loss', 'acc'], default='loss',
+parser.add_argument('-v', '--val_metric', type=str, choices=['loss', 'acc'], default='loss',
                     help="Metric to monitor for validation set. Values: loss (default) or acc.")
-parser.add_argument('-image_feature', type=str, choices=['facet', 'openface'], default='facet',
+parser.add_argument('-f', '--image_feature', type=str, choices=['facet', 'openface'], default='facet',
                     help="Image features. Values: facet (default) or openface.")
 args = parser.parse_args()
 

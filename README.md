@@ -26,23 +26,46 @@ features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), 
 ## How to run the code
 1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
 2. Run as follows:
+
 ```commandline
-python3 main.py [-FLAGS]
+usage: main.py [-h] [-df DATASET_FOLDER] [-pn PICKLE_NAME] [-pf PICKLE_FOLDER]
+               [-t {0,1}] [-l {0,1}] [-c {0,1}] [-v {loss,acc}]
+               [-f {facet,openface}]
+
+Emotion Recognition using CMU-MOSEI database. Related paper: Williams, J.,
+Kleinegesse, S., Comanescu, R., & Radu, O. (2018, July). Recognizing Emotions
+in Video Using Multimodal DNN Feature Fusion. In Proceedings of Grand
+Challenge and Workshop on Human Multimodal Language (Challenge-HML) (pp.
+11-19).
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -df DATASET_FOLDER, --dataset_folder DATASET_FOLDER
+                        Name of the folder where the CMU-MOSEI mmdataset will
+                        be downloaded (default: cmu_mosei/)
+  -pn PICKLE_NAME, --pickle_name PICKLE_NAME
+                        Name of the pickle object that will contain the CMU-
+                        MOSEI mmdataset (default: cmu_mosei_aligned)
+  -pf PICKLE_FOLDER, --pickle_folder PICKLE_FOLDER
+                        Name of the folder where to save the pickle object
+                        that contain the CMU-MOSEI mmdataset (default:
+                        cmu_mosei/pickle_files/)
+  -t {0,1}, --align_to_text {0,1}
+                        Whether we want data to align to the textual modality.
+                        1 for True (default) and 0 for False
+  -l {0,1}, --append_label_to_data {0,1}
+                        Whether we want data to append annotations to the
+                        dataset. 1 for True (default) and 0 for False
+  -c {0,1}, --with_custom_split {0,1}
+                        Whether we want to perform custom split on training
+                        and validation sets (for more details, cf. paper). 1
+                        for True and 0 for False (default)
+  -v {loss,acc}, --val_metric {loss,acc}
+                        Metric to monitor for validation set. Values: loss
+                        (default) or acc.
+  -f {facet,openface}, --image_feature {facet,openface}
+                        Image features. Values: facet (default) or openface.
 ```
-
-#### List of the flags
-
-| Flag name            | Values            | Description                                                                                                                       | Default                 |
-|----------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------|-------------------------|
-| dataset_folder       | str               | Name of the folder where the CMU-MOSEI mmdataset will be downloaded                                                               | cmu_mosei/              |
-| pickle_name          | str               | Name of the pickle object that will contain the CMU-MOSEI mmdataset                                                               | cmu_mosei               |
-| pickle_folder        | str               | Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset                                           | cmu_mosei/pickle_files/ |
-| align_to_text        | {0, 1}            | Whether we want data to align to the textual modality. 1 for True and 0 for False                                                 | 1 (True)                |
-| append_label_to_data | {0, 1}            | Whether we want data to append annotations to the dataset. 1 for True and 0 for False                                             | 1 (True)                |
-| with_custom_split    | {0, 1}            | Whether we want to perform custom split on training and validation sets (for more details, cf. paper). 1 for True and 0 for False | 0 (False)               |
-| val_metric           | {loss, acc}       | Metric to monitor for validation set                                                                                              | loss                    |
-| image_feature        | {facet, openface} | Image features: FACET 4.2 or OpenFace 2                                                                                           | facet                   |
-
 
 
 ## Differences with the original code
