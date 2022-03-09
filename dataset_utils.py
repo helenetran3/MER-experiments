@@ -2,8 +2,10 @@ import os
 import re
 import pickle
 import numpy as np
+import tensorflow as tf
 from mmsdk import mmdatasdk
 from sklearn.utils import shuffle
+import random
 
 
 # COLLAPSE FUNCTIONS FOR DATA ALIGNMENT
@@ -123,25 +125,28 @@ def custom_split(train, valid):
 
 def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     """
-    Create 3 lists of arrays for training, validation and test sets.
+    For each training, validation and test sets, create three lists:
+    - one for features (x): arrays of shape (3, feature size) for text/image/audio features (concatenated in this order)
+    - one for labels (y): arrays of shape (1, 7), for the 7 emotions
+    - one for segment ids (seg): list of 2 elements (start and end times)
     (Followed tutorial https://github.com/Justin1904/CMU-MultimodalSDK-Tutorials/blob/master/tutorial_interactive.ipynb)
+    Note that this function performs **early fusion** (concatenation of low level text, image and audio features).
 
     :param dataset: CMU-MOSEI mmdataset
     :param train_ids: list of training ids
     :param valid_ids: list of validation ids
     :param test_ids: list of test ids
     :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
-    :return: 3 lists of training, validation and test sets containing lists of structure
-            [text_seg, image_seg, audio_seg, label_seg, seg_id]
+    :return: 9 lists x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test
     """
 
     # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
     EPS = 0
 
     # Placeholders for training, validation, and test sets
-    train = []
-    valid = []
-    test = []
+    x_train, y_train, seg_train = [], [], []
+    x_valid, y_valid, seg_valid = [], [], []
+    x_test, y_test, seg_test = [], [], []
 
     image_feature_id = 'FACET 4.2' if image_feature == 'facet' else 'OpenFace_2'
     image_dataset = dataset[image_feature_id]
@@ -185,46 +190,60 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
         audio_seg = np.nan_to_num(
             (audio_seg - audio_seg.mean(0, keepdims=True)) / (EPS + np.std(audio_seg, axis=0, keepdims=True)))
 
+        data_seg = np.concatenate((text_seg, image_seg, audio_seg), axis=1)  # early fusion
+
         if vid in train_ids:
-            train.append([text_seg, image_seg, audio_seg, label_seg, seg_id])
+            x_train.append(data_seg)
+            y_train.append(label_seg)
+            seg_train.append(seg_id)
         elif vid in valid_ids:
-            valid.append([text_seg, image_seg, audio_seg, label_seg, seg_id])
+            x_valid.append(data_seg)
+            y_valid.append(label_seg)
+            seg_valid.append(seg_id)
         elif vid in test_ids:
-            test.append([text_seg, image_seg, audio_seg, label_seg, seg_id])
+            x_test.append(data_seg)
+            y_test.append(label_seg)
+            seg_test.append(seg_id)
         else:
             # print("Encountered video {} that does not belong to any split.".format(vid))
             num_no_split += 1
 
+    train_size = len(y_train)
+    valid_size = len(y_valid)
+    test_size = len(y_test)
+
     print("----------------------------------------------------")
     print("Split dataset complete!")
-    total_data_split = len(train) + len(valid) + len(test)
+    total_data_split = train_size + valid_size + test_size
     total_data = total_data_split + num_drop + num_no_split
     print("Total number of {} datapoints have been dropped ({:.2f}% of total data)."
           .format(num_drop, 100 * (num_drop / total_data)))
     print("Total number of {} datapoints do not belong to any split ({:.2f}% of total data)."
           .format(num_no_split, 100 * (num_no_split / total_data)))
-    print("Number of training datapoints: {} ({:.2f}%)".format(len(train), 100 * (len(train) / total_data_split)))
-    print("Number of validation datapoints: {} ({:.2f}%)".format(len(valid), 100 * (len(valid) / total_data_split)))
-    print("Number of test datapoints: {} ({:.2f}%)".format(len(test), 100 * (len(test) / total_data_split)))
+    print("Number of training datapoints: {} ({:.2f}%)".format(train_size, 100 * (train_size / total_data_split)))
+    print("Number of validation datapoints: {} ({:.2f}%)".format(valid_size, 100 * (valid_size / total_data_split)))
+    print("Number of test datapoints: {} ({:.2f}%)".format(test_size, 100 * (test_size / total_data_split)))
 
-    return train, valid, test
+    return x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test
 
 
-def yield_datapoints(datapoint_list, random_state):
+def yield_datapoints(x_list, y_list, seg_list, random_seed):
+    """
+    Yields iteratively one datapoint represented by 1 array of features, 1 array of labels, 1 list of start/end times
+
+    :param x_list: list of arrays of shape (number steps, feature size)
+    :param y_list: list of arrays of shape (1, 7), for the 7 emotions
+    :param seg_list: list of lists of 2 elements (start and end time)
+    :param random_seed: random state for data shuffle
+    :return: yields 1 datapoint (x, y, id) iteratively
     """
 
-    :param datapoint_list: list of datapoints containing lists of [text_seg, image_seg, audio_seg, label_seg, seg_id]
-    :param random_state: random state for data shuffle
-    :return: yields 1 array of shape (3, num_datapoints), 1 label and 1 segment id iteratively
-    """
-    datapoint_array = np.array(datapoint_list)
-    X = datapoint_array[:, :3]
-    y = datapoint_array[:, 3]
-    seg_id = datapoint_array[:, 4]
-    num_data = datapoint_array.shape[0]
+    if not len(x_list) == len(y_list) == len(seg_list):
+        print("x_list, y_list, seg_list do not have the same number of elements")
 
-    X_s, y_s, seg_id_s = shuffle(X, y, seg_id, random_state=random_state)
+    else:
+        order = list(range(len(x_list)))
+        random.Random(random_seed).shuffle(order)
 
-    for i in range(num_data):
-
-        yield X_s[i], y_s[i], seg_id_s[i]
+        for i in order:
+            yield x_list[i], y_list[i], seg_list[i]
