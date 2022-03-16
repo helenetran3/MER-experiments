@@ -4,8 +4,6 @@ import pickle
 import numpy as np
 import tensorflow as tf
 from mmsdk import mmdatasdk
-from sklearn.utils import shuffle
-import random
 
 
 # COLLAPSE FUNCTIONS FOR DATA ALIGNMENT
@@ -126,9 +124,10 @@ def custom_split(train, valid):
 def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     """
     For each training, validation and test sets, create three lists:
-    - one for features (x): arrays of shape (3, feature size) for text/image/audio features (concatenated in this order)
+    - one for features (x): arrays of shape (number steps, number features) for text/image/audio features (concatenated
+    in this order)
     - one for labels (y): arrays of shape (1, 7), for the 7 emotions
-    - one for segment ids (seg): list of 2 elements (start and end times)
+    - one for segment ids (seg): id of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'
     (Followed tutorial https://github.com/Justin1904/CMU-MultimodalSDK-Tutorials/blob/master/tutorial_interactive.ipynb)
     Note that this function performs **early fusion** (concatenation of low level text, image and audio features).
 
@@ -227,15 +226,14 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     return x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test
 
 
-def yield_datapoints(x_list, y_list, seg_list, random_seed):
+def datapoint_generator(x_list, y_list, seg_list):
     """
     Yields iteratively one datapoint represented by 1 array of features, 1 array of labels, 1 list of start/end times
 
-    :param x_list: list of arrays of shape (number steps, feature size)
+    :param x_list: list of arrays of shape (number steps, number features)
     :param y_list: list of arrays of shape (1, 7), for the 7 emotions
-    :param seg_list: list of lists of 2 elements (start and end time)
-    :param random_seed: random state for data shuffle
-    :return: yields 1 datapoint (x, y, id) iteratively
+    :param seg_list: list of ids of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'
+    :return: yields 1 datapoint (x, y, seg_id) iteratively
     """
 
     if not len(x_list) == len(y_list) == len(seg_list):
@@ -243,7 +241,30 @@ def yield_datapoints(x_list, y_list, seg_list, random_seed):
 
     else:
         order = list(range(len(x_list)))
-        random.Random(random_seed).shuffle(order)
 
         for i in order:
             yield x_list[i], y_list[i], seg_list[i]
+
+
+def get_dataset(x_list, y_list, seg_list, batch_size, num_steps):
+    """
+    Returns a TensorFlow dataset from a datapoint generator.
+    
+    :param x_list: list of arrays of shape (number steps, number features)
+    :param y_list: list of arrays of shape (1, 7), for the 7 emotions
+    :param seg_list: list of lists of 2 elements (start and end time)
+    :param batch_size: batch size
+    :param num_steps: fixed number of steps in the sequence
+    :return: a TensorFlow dataset
+    """
+
+    num_features = x_list[0].shape[1]
+    tf_dataset = tf.data.Dataset.from_generator(generator=lambda: datapoint_generator(x_list, y_list, seg_list),
+                                                output_signature=(
+                                                    tf.TensorSpec(shape=(num_steps, num_features), dtype=tf.float64),
+                                                    tf.TensorSpec(shape=(1, 7), dtype=tf.float64),
+                                                    tf.TensorSpec(shape=(), dtype=tf.string)
+                                                ))
+    tf_dataset.shuffle(len(seg_list)).batch(batch_size).repeat()
+
+    return tf_dataset
