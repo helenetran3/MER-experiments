@@ -226,13 +226,37 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     return x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test
 
 
-def datapoint_generator(x_list, y_list, seg_list):
+def seq_with_fixed_length(seq_array, fixed_num_steps):
+    """
+    Pad or truncate sequence data to a given length.
+
+    :param seq_array: 1 array of shape (own number of steps, number features)
+    :param fixed_num_steps: fixed number of steps
+    :return: seq_array with the fixed number of steps
+    """
+    own_num_steps = seq_array.shape[0]
+    num_features = seq_array.shape[1]
+
+    if fixed_num_steps >= own_num_steps:
+        diff = fixed_num_steps - own_num_steps
+        zeroes = np.zeros((diff, num_features))
+        new_seq_array = np.concatenate((seq_array, zeroes))
+
+    else:
+        new_seq_array = seq_array[-fixed_num_steps:]
+
+    return new_seq_array
+
+
+def datapoint_generator(x_list, y_list, seg_list, with_fixed_length, fixed_num_steps):
     """
     Yields iteratively one datapoint represented by 1 array of features, 1 array of labels, 1 list of start/end times
 
     :param x_list: list of arrays of shape (number steps, number features)
     :param y_list: list of arrays of shape (1, 7), for the 7 emotions
     :param seg_list: list of ids of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'
+    :param with_fixed_length: whether we fix all feature vectors to the same length
+    :param fixed_num_steps: fixed number of steps in the sequence
     :return: yields 1 datapoint (x, y, seg_id) iteratively
     """
 
@@ -240,13 +264,12 @@ def datapoint_generator(x_list, y_list, seg_list):
         print("x_list, y_list, seg_list do not have the same number of elements")
 
     else:
-        order = list(range(len(x_list)))
+        for i in range(len(x_list)):
+            x_list_i = x_list[i] if not with_fixed_length else seq_with_fixed_length(x_list[i], fixed_num_steps)
+            yield x_list_i, y_list[i], seg_list[i]
 
-        for i in order:
-            yield x_list[i], y_list[i], seg_list[i]
 
-
-def get_dataset(x_list, y_list, seg_list, batch_size, num_steps):
+def get_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixed_num_steps):
     """
     Returns a TensorFlow dataset from a datapoint generator.
     
@@ -254,14 +277,16 @@ def get_dataset(x_list, y_list, seg_list, batch_size, num_steps):
     :param y_list: list of arrays of shape (1, 7), for the 7 emotions
     :param seg_list: list of lists of 2 elements (start and end time)
     :param batch_size: batch size
-    :param num_steps: fixed number of steps in the sequence
+    :param with_fixed_length: whether we fix all feature vectors to the same length
+    :param fixed_num_steps: fixed number of steps in the sequence
     :return: a TensorFlow dataset
     """
 
     num_features = x_list[0].shape[1]
-    tf_dataset = tf.data.Dataset.from_generator(generator=lambda: datapoint_generator(x_list, y_list, seg_list),
+    tf_dataset = tf.data.Dataset.from_generator(generator=lambda: datapoint_generator(x_list, y_list, seg_list,
+                                                                                      with_fixed_length, fixed_num_steps),
                                                 output_signature=(
-                                                    tf.TensorSpec(shape=(num_steps, num_features), dtype=tf.float64),
+                                                    tf.TensorSpec(shape=(fixed_num_steps, num_features), dtype=tf.float64),
                                                     tf.TensorSpec(shape=(1, 7), dtype=tf.float64),
                                                     tf.TensorSpec(shape=(), dtype=tf.string)
                                                 ))
