@@ -95,30 +95,48 @@ def get_fold_ids():
     return train_ids, valid_ids, test_ids
 
 
-def custom_split(train, valid):
+def perform_custom_split(train_ids, valid_ids, test_ids):
     """
-    Create three sets (training, validation and test) based on two sets (training and validation).
+    Perform custom split on training and validation sets.
     Final training set:   85% of original training data
-    Final validation set: 10% of original training data and 50% of validation data
-    Final test set:        5% of original training data and 50% of validation data
+    Final validation set: 10% of training data and 50% of validation data
+    Final test set:       (5% of training data and 50% of validation data) + original test data
 
-    :param train: list of ids for training set
-    :param valid: list of ids for validation set
-    :return: 3 lists of ids for training, validation, and test sets respectively
+    :param train_ids: list of segment ids for training set
+    :param valid_ids: list of segment ids for validation set
+    :param test_ids: list of segment ids for test set
+    :return: new train_ids, valid_ids, test_ids
     """
-    total = len(valid)
-    half = total // 2
-    valid_ids_list = valid[:half]
-    test_ids_list = valid[half + 1:]
-    # 5 % of training into test data
-    five_p = int(len(train) * 0.05)
-    train_ids_list = train[:-five_p]
-    test_ids_list = test_ids_list + train[-five_p:]
-    # 10% of leftover training into valid data
-    ten_p = int(len(train_ids_list) * 0.1)
-    train_ids_list = train_ids_list[:-ten_p]
-    valid_ids_list = valid_ids_list + train_ids_list[-ten_p:]
-    return train_ids_list, valid_ids_list, test_ids_list
+
+    def custom_split(train, valid):
+        """
+        Create three sets (training, validation and test) based on two sets (training and validation).
+        Final training set:   85% of original training data
+        Final validation set: 10% of training data and 50% of validation data
+        Final test set:        5% of training data and 50% of validation data
+
+        :param train: list of ids for training set
+        :param valid: list of ids for validation set
+        :return: 3 lists of ids for training, validation, and test sets respectively
+        """
+        total = len(valid)
+        half = total // 2
+        valid_ids_list = valid[:half]
+        test_ids_list = valid[half + 1:]
+        # 5 % of training into test data
+        five_p = int(len(train) * 0.05)
+        train_ids_list = train[:-five_p]
+        test_ids_list = test_ids_list + train[-five_p:]
+        # 10% of leftover training into valid data
+        ten_p = int(len(train_ids_list) * 0.1)
+        train_ids_list = train_ids_list[:-ten_p]
+        valid_ids_list = valid_ids_list + train_ids_list[-ten_p:]
+        return train_ids_list, valid_ids_list, test_ids_list
+
+    train_ids_cs, valid_ids_cs, test_ids_cs = custom_split(train_ids, valid_ids)
+    new_train_ids, new_valid_ids, new_test_ids = train_ids_cs, valid_ids_cs, test_ids_cs + test_ids
+
+    return new_train_ids, new_valid_ids, new_test_ids
 
 
 def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
@@ -272,6 +290,7 @@ def datapoint_generator(x_list, y_list, seg_list, with_fixed_length, fixed_num_s
 def get_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixed_num_steps):
     """
     Returns a TensorFlow dataset from a datapoint generator.
+    #TODO Case where the number of steps is not fixed
     
     :param x_list: list of arrays of shape (number steps, number features)
     :param y_list: list of arrays of shape (1, 7), for the 7 emotions
@@ -284,9 +303,11 @@ def get_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixed_n
 
     num_features = x_list[0].shape[1]
     tf_dataset = tf.data.Dataset.from_generator(generator=lambda: datapoint_generator(x_list, y_list, seg_list,
-                                                                                      with_fixed_length, fixed_num_steps),
+                                                                                      with_fixed_length,
+                                                                                      fixed_num_steps),
                                                 output_signature=(
-                                                    tf.TensorSpec(shape=(fixed_num_steps, num_features), dtype=tf.float64),
+                                                    tf.TensorSpec(shape=(fixed_num_steps, num_features),
+                                                                  dtype=tf.float64),
                                                     tf.TensorSpec(shape=(1, 7), dtype=tf.float64),
                                                     tf.TensorSpec(shape=(), dtype=tf.string)
                                                 ))

@@ -30,7 +30,7 @@ features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), 
 ```commandline
 usage: main.py [-h] [-df DATASET_FOLDER] [-pn PICKLE_NAME] [-pf PICKLE_FOLDER]
                [-t {0,1}] [-l {0,1}] [-c {0,1}] [-v {loss,acc}]
-               [-f {facet,openface}]
+               [-f {facet,openface}] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS]
 
 Emotion Recognition using CMU-MOSEI database. Related paper: Williams, J.,
 Kleinegesse, S., Comanescu, R., & Radu, O. (2018, July). Recognizing Emotions
@@ -65,6 +65,12 @@ optional arguments:
                         (default) or acc.
   -f {facet,openface}, --image_feature {facet,openface}
                         Image features. Values: facet (default) or openface.
+  -b BATCH_SIZE, --batch_size BATCH_SIZE
+                        Batch size
+  -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
+                        Number of steps to fix for all sequences. Set to 0 
+                        if you want to keep the original number of steps.
+
 ```
 
 
