@@ -4,7 +4,7 @@
 it run with Python 3 and the current version of [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). 
 This README will be updated once the code works. Thank you for your interest!
 
-Paper: [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion](http://www.aclweb.org/anthology/W18-3302)
+[//]: # (Paper: [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion]&#40;http://www.aclweb.org/anthology/W18-3302&#41;)
 
 Please cite the paper of the original authors if the code was useful to you:
 ```
@@ -23,63 +23,70 @@ features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), 
 **glove_vectors** (text). Some slight changes have been made from the original repository 
 (cf. [Differences with the original code](#Differences-with-the-original-code) section).
 
+## Environment
+- Python 3.9.7
+- TensorFlow 2.8
+- Keras 2.8
+- NumPy 1.20.3
+
 ## How to run the code
 1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
-2. Run as follows:
+2. Two ways to run the code:
 
-```commandline
-usage: main.py [-h] [-df DATASET_FOLDER] [-pn PICKLE_NAME] [-pf PICKLE_FOLDER] [-t {0,1}]
-               [-al {0,1}] [-c {0,1}] [-v {loss,acc}] [-f {facet,openface}]
-               [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-l {1,2,3}] [-n NUM_NODES]
-               [-d DROPOUT_RATE] [-a FINAL_ACTIV]
+   1. **Using bash script** (you can set the parameters by editing the file):
+   
+    ```commandline
+    ./run_cluster.sh
+    ```
+    
 
-Emotion Recognition using CMU-MOSEI database. Related paper: Williams, J., Kleinegesse,
-S., Comanescu, R., & Radu, O. (2018, July). Recognizing Emotions in Video Using Multimodal
-DNN Feature Fusion. In Proceedings of Grand Challenge and Workshop on Human Multimodal
-Language (Challenge-HML) (pp. 11-19).
+   2. **Running main.py in the command line:**
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -df DATASET_FOLDER, --dataset_folder DATASET_FOLDER
-                        Name of the folder where the CMU-MOSEI mmdataset will be
-                        downloaded (default: cmu_mosei/).
-  -pn PICKLE_NAME, --pickle_name PICKLE_NAME
-                        Name of the pickle object that will contain the CMU-MOSEI
-                        mmdataset (default: cmu_mosei_aligned).
-  -pf PICKLE_FOLDER, --pickle_folder PICKLE_FOLDER
-                        Name of the folder where to save the pickle object that contain
-                        the CMU-MOSEI mmdataset (default: cmu_mosei/pickle_files/).
-  -t {0,1}, --align_to_text {0,1}
-                        Whether we want data to align to the textual modality. 1 for True
-                        (default) and 0 for False.
-  -al {0,1}, --append_label_to_data {0,1}
-                        Whether we want data to append annotations to the dataset. 1 for
-                        True (default) and 0 for False.
-  -c {0,1}, --with_custom_split {0,1}
-                        Whether we want to perform custom split on training and validation
-                        sets (for more details, cf. paper). 1 for True and 0 for False
-                        (default).
-  -v {loss,acc}, --val_metric {loss,acc}
-                        Metric to monitor for validation set. Values: loss (default) or
-                        acc.
-  -f {facet,openface}, --image_feature {facet,openface}
-                        Image features. Values: facet (default) or openface.
-  -b BATCH_SIZE, --batch_size BATCH_SIZE
-                        Batch size
-  -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
-                        Number of steps to fix for all sequences. Set to 0 if you want to
-                        keep the original number of steps.
-  -l {1,2,3}, --num_layers {1,2,3}
-                        Number of bidirectional layers. Values between 1 and 3.
-  -n NUM_NODES, --num_nodes NUM_NODES
-                        Number of nodes in the penultimate dense layer.
-  -d DROPOUT_RATE, --dropout_rate DROPOUT_RATE
-                        Dropout rate
-  -a FINAL_ACTIV, --final_activ FINAL_ACTIV
-                        Activation function of the final layer (default: linear).
+    ```commandline
+    usage: main.py [-h] [-df DATASET_FOLDER] [-pn PICKLE_NAME] [-pf PICKLE_FOLDER] [-t] [-al]
+                   [-c] [-v {loss,acc}] [-f {facet,openface}] [-b BATCH_SIZE]
+                   [-s FIXED_NUM_STEPS] [-l {1,2,3}] [-n NUM_NODES] [-d DROPOUT_RATE]
+                   [-a FINAL_ACTIV]
+    ```
+    
+    Optional arguments:
+    
+    ```commandline
+      -h, --help            show this help message and exit
+      -df DATASET_FOLDER, --dataset_folder DATASET_FOLDER
+                            Name of the folder where the CMU-MOSEI mmdataset will be
+                            downloaded.
+      -pn PICKLE_NAME, --pickle_name PICKLE_NAME
+                            Name of the pickle object that will contain the CMU-MOSEI
+                            mmdataset.
+      -pf PICKLE_FOLDER, --pickle_folder PICKLE_FOLDER
+                            Name of the folder where to save the pickle object that contain
+                            the CMU-MOSEI mmdataset.
+      -t, --align_to_text   Data will be aligned to the textual modality.
+      -al, --append_label_to_data
+                            Append annotations to the dataset.
+      -c, --with_custom_split
+                            Perform custom split on training and validation sets (for more
+                            details, cf. paper).
+      -v {loss,acc}, --val_metric {loss,acc}
+                            Metric to monitor for validation set. Values: loss or acc.
+      -f {facet,openface}, --image_feature {facet,openface}
+                            Image features. Values: facet or openface.
+      -b BATCH_SIZE, --batch_size BATCH_SIZE
+                            Batch size
+      -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
+                            Number of steps to fix for all sequences. Set to 0 if you want to
+                            keep the original number of steps.
+      -l {1,2,3}, --num_layers {1,2,3}
+                            Number of bidirectional layers. Values between 1 and 3.
+      -n NUM_NODES, --num_nodes NUM_NODES
+                            Number of nodes in the penultimate dense layer.
+      -d DROPOUT_RATE, --dropout_rate DROPOUT_RATE
+                            Dropout rate
+      -a FINAL_ACTIV, --final_activ FINAL_ACTIV
+                            Activation function of the final layer.
 
-
-```
+    ```
 
 
 ## Differences with the original code

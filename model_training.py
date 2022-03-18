@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import numpy as np
 from keras.models import Sequential
 from keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
 from dataset_utils import split_dataset, get_dataset

@@ -13,4 +13,19 @@
  
 #===============================================================================
 
-python3 ./main.py
+python3 ./main.py \
+--dataset_folder cmu_mosei/ \
+--pickle_name cmu_mosei \
+--pickle_folder cmu_mosei/pickle_files/ \
+--align_to_text \
+--append_label_to_data \
+#--with_custom_split \
+--val_metric loss \
+--image_feature facet \
+--batch_size 32 \
+--fixed_num_steps 45 \
+--num_layers 1 \
+--num_nodes 100 \
+--dropout_rate 0.2 \
+--final_activ linear
+
