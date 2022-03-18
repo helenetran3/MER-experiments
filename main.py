@@ -1,7 +1,8 @@
-from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, perform_custom_split, split_dataset
-from dataset_utils import get_dataset
+from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, perform_custom_split
+from model_training import train_model
 import argparse
 import os
+
 
 parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSEI database. "
                                              "Related paper: "
@@ -10,34 +11,55 @@ parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSE
                                              "Proceedings of Grand Challenge and Workshop on Human Multimodal "
                                              "Language (Challenge-HML) (pp. 11-19).")
 parser.add_argument('-df', '--dataset_folder', type=str, default="cmu_mosei/",
-                    help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded (default: cmu_mosei/)")
+                    help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded (default: cmu_mosei/).")
 parser.add_argument('-pn', '--pickle_name', type=str, default="cmu_mosei",
                     help="Name of the pickle object that will contain the CMU-MOSEI mmdataset (default: "
-                         "cmu_mosei_aligned)")
+                         "cmu_mosei_aligned).")
 parser.add_argument('-pf', '--pickle_folder', type=str, default="cmu_mosei/pickle_files/",
                     help="Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset "
-                         "(default: cmu_mosei/pickle_files/)")
+                         "(default: cmu_mosei/pickle_files/).")
 parser.add_argument('-t', '--align_to_text', type=int, choices=range(0, 2), default=1,
-                    help="Whether we want data to align to the textual modality. 1 for True (default) and 0 for False")
-parser.add_argument('-l', '--append_label_to_data', type=int, choices=range(0, 2), default=1,
+                    help="Whether we want data to align to the textual modality. 1 for True (default) and 0 for False.")
+parser.add_argument('-al', '--append_label_to_data', type=int, choices=range(0, 2), default=1,
                     help="Whether we want data to append annotations to the dataset. 1 for True (default) and 0 for "
-                         "False")
+                         "False.")
 parser.add_argument('-c', '--with_custom_split', type=int, choices=range(0, 2), default=0,
                     help="Whether we want to perform custom split on training and validation sets (for more details, "
-                         "cf. paper). 1 for True and 0 for False (default)")
+                         "cf. paper). 1 for True and 0 for False (default).")
 parser.add_argument('-v', '--val_metric', type=str, choices=['loss', 'acc'], default='loss',
                     help="Metric to monitor for validation set. Values: loss (default) or acc.")
 parser.add_argument('-f', '--image_feature', type=str, choices=['facet', 'openface'], default='facet',
                     help="Image features. Values: facet (default) or openface.")
-parser.add_argument('-b', '--batch_size', type=str,
+parser.add_argument('-b', '--batch_size', type=int,
                     help="Batch size")
-parser.add_argument('-s', '--fixed_num_steps', type=str,
+parser.add_argument('-s', '--fixed_num_steps', type=int,
                     help="Number of steps to fix for all sequences. Set to 0 if you want to keep the original number "
                          "of steps.")
+parser.add_argument('-l', '--num_layers', type=int, choices=range(1, 4),
+                    help="Number of bidirectional layers. Values between 1 and 3.")
+parser.add_argument('-n', '--num_nodes', type=int,
+                    help="Number of nodes in the penultimate dense layer.")
+parser.add_argument('-d', '--dropout_rate', type=float,
+                    help="Dropout rate")
+parser.add_argument('-a', '--final_activ', type=str, default='linear',
+                    help="Activation function of the final layer (default: linear).")
 args = parser.parse_args()
 
 
 def main():
+    if args.fixed_num_steps is None:
+        print("fixed_num_steps (-s) not set, please check again.")
+        quit()
+    if args.num_nodes is None:
+        print("num_nodes (-n) not set, please check again.")
+        quit()
+    if args.num_layers is None:
+        print("num_layers (-l) not set, please check again.")
+        quit()
+    if args.batch_size is None:
+        print("batch_size (-b) not set, please check again.")
+        quit()
+
     pickle_path = os.path.join(args.pickle_folder, args.pickle_name + ".pkl")
 
     # Download CMU-MOSEI dataset using SDK and save with pickle
@@ -53,18 +75,15 @@ def main():
     print("CMU-MOSEI dataset loaded")
     print("The existing computational sequences in dataset are: {}".format(list(dataset.keys())))
 
-    # Get standard train, valid and test folds
+    # Get ids of standard train, valid and test folds (provided by the SDK)
     train_ids, valid_ids, test_ids = get_fold_ids()
     if args.with_custom_split:
         train_ids, valid_ids, test_ids = perform_custom_split(train_ids, valid_ids, test_ids)
 
-    x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test = split_dataset(dataset, train_ids, valid_ids, test_ids, args.image_feature)
+    # Model training
+    train_model(dataset, train_ids, valid_ids, test_ids, args.batch_size, args.fixed_num_steps, args.image_feature,
+                args.num_layers, args.num_nodes, args.dropout_rate, args.final_activ)
 
-    # Create TensorFlow datasets for model training
-    with_fixed_length = (args.fixed_num_steps > 0)
-    train_dataset = get_dataset(x_train, y_train, seg_train, args.batch_size, with_fixed_length, args.fixed_num_steps)
-    valid_dataset = get_dataset(x_valid, y_valid, seg_valid, args.batch_size, with_fixed_length, args.fixed_num_steps)
-    test_dataset = get_dataset(x_test, y_test, seg_test, args.batch_size, with_fixed_length, args.fixed_num_steps)
 
 if __name__ == "__main__":
     main()
