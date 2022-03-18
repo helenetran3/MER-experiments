@@ -63,7 +63,7 @@ def download_dataset(dataset_folder, pickle_name, pickle_folder, align_to_text, 
 
 def load_dataset_from_pickle(pickle_name, pickle_folder):
     """
-    Load CMU-MOSEI data from pickle file.
+    Load CMU-MOSEI dataset from pickle file.
 
     :param pickle_name: name of the pickle object that contains the CMU-MOSEI mmdataset
     :param pickle_folder: name of the folder where to save the pickle object
@@ -76,24 +76,13 @@ def load_dataset_from_pickle(pickle_name, pickle_folder):
     with open(pickle_path, 'rb') as fr:
         cmu_mosei = pickle.load(fr)
 
+    print("CMU-MOSEI dataset loaded")
+    print("The existing computational sequences in dataset are: {}".format(list(cmu_mosei.keys())))
+
     return cmu_mosei
 
 
 # CMU-MOSEI DATA SPLIT INTO TRAINING, VALIDATION AND TEST SETS
-
-def get_fold_ids():
-    """
-    Get CMU-MOSEI standard fold ids for training, validation, and test
-
-    :return: 3 lists of ids for training, validation, and test sets respectively
-    """
-
-    train_ids = mmdatasdk.cmu_mosei.standard_folds.standard_train_fold
-    valid_ids = mmdatasdk.cmu_mosei.standard_folds.standard_valid_fold
-    test_ids = mmdatasdk.cmu_mosei.standard_folds.standard_test_fold
-
-    return train_ids, valid_ids, test_ids
-
 
 def perform_custom_split(train_ids, valid_ids, test_ids):
     """
@@ -137,6 +126,23 @@ def perform_custom_split(train_ids, valid_ids, test_ids):
     new_train_ids, new_valid_ids, new_test_ids = train_ids_cs, valid_ids_cs, test_ids_cs + test_ids
 
     return new_train_ids, new_valid_ids, new_test_ids
+
+
+def get_fold_ids(with_custom_split):
+    """
+    Get CMU-MOSEI standard fold ids for training, validation, and test
+
+    :return: 3 lists of ids for training, validation, and test sets respectively
+    """
+
+    train_ids = mmdatasdk.cmu_mosei.standard_folds.standard_train_fold
+    valid_ids = mmdatasdk.cmu_mosei.standard_folds.standard_valid_fold
+    test_ids = mmdatasdk.cmu_mosei.standard_folds.standard_test_fold
+
+    if with_custom_split:
+        train_ids, valid_ids, test_ids = perform_custom_split(train_ids, valid_ids, test_ids)
+
+    return train_ids, valid_ids, test_ids
 
 
 def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):

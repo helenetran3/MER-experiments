@@ -1,4 +1,4 @@
-from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, perform_custom_split
+from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids
 from model_training import train_model
 import argparse
 import os
@@ -64,24 +64,18 @@ def main():
 
     # Download CMU-MOSEI dataset using SDK and save with pickle
     if not os.path.exists(pickle_path):
-        download_dataset(dataset_folder=args.dataset_folder,
-                         pickle_name=args.pickle_name,
-                         pickle_folder=args.pickle_folder,
-                         align_to_text=args.align_to_text,
-                         append_label_to_data=args.append_label_to_data)
+        download_dataset(args.dataset_folder, args.pickle_name, args.pickle_folder,
+                         args.align_to_text, args.append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
-    dataset = load_dataset_from_pickle(args.pickle_name, pickle_folder=args.pickle_folder)
-    print("CMU-MOSEI dataset loaded")
-    print("The existing computational sequences in dataset are: {}".format(list(dataset.keys())))
+    dataset = load_dataset_from_pickle(args.pickle_name, args.pickle_folder)
 
     # Get ids of standard train, valid and test folds (provided by the SDK)
-    train_ids, valid_ids, test_ids = get_fold_ids()
-    if args.with_custom_split:
-        train_ids, valid_ids, test_ids = perform_custom_split(train_ids, valid_ids, test_ids)
+    train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
 
     # Model training
-    train_model(dataset, train_ids, valid_ids, test_ids, args.batch_size, args.fixed_num_steps, args.image_feature,
+    train_model(dataset, train_ids, valid_ids, test_ids,
+                args.batch_size, args.fixed_num_steps, args.image_feature,
                 args.num_layers, args.num_nodes, args.dropout_rate, args.final_activ)
 
 
