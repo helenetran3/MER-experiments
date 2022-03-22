@@ -13,4 +13,24 @@
  
 #===============================================================================
 
-python3 ./main.py -pickle_name cmu_mosei_aligned_text_no_averaged 
+python3 ./main.py \
+--dataset_folder cmu_mosei/ \
+--pickle_name cmu_mosei \
+--pickle_folder cmu_mosei/pickle_files/ \
+--align_to_text \
+--append_label_to_data \
+--val_metric loss \
+--image_feature facet \
+--batch_size 32 \
+--fixed_num_steps 45 \
+--num_layers 1 \
+--num_nodes 100 \
+--dropout_rate 0.2 \
+--final_activ linear \
+--model_dir models/ \
+--model_name MultimodalDNN \
+--num_epochs 200 \
+--patience 30 \
+--learning_rate 0.001 \
+--loss_function mean_absolute_error
+#--with_custom_split \
