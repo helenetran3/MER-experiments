@@ -39,6 +39,18 @@ parser.add_argument('-d', '--dropout_rate', type=float,
                     help="Dropout rate")
 parser.add_argument('-a', '--final_activ', type=str,
                     help="Activation function of the final layer.")
+parser.add_argument('-md', '--model_dir', type=str,
+                    help="Name of the directory where the models will be saved.")
+parser.add_argument('-mn', '--model_name', type=str,
+                    help="Name of the model to be saved.")
+parser.add_argument('-e', '--num_epochs', type=int,
+                    help="Maximum number of epochs")
+parser.add_argument('-p', '--patience', type=int,
+                    help="Number of epochs with no improvement after which the training will be stopped.")
+parser.add_argument('-lr', '--learning_rate', type=float,
+                    help="Learning rate")
+parser.add_argument('-lf', '--loss_function', type=str,
+                    help="Loss function")
 args = parser.parse_args()
 
 
@@ -58,8 +70,9 @@ def main():
 
     # Model training
     train_model(dataset, train_ids, valid_ids, test_ids,
-                args.batch_size, args.fixed_num_steps, args.image_feature,
-                args.num_layers, args.num_nodes, args.dropout_rate, args.final_activ)
+                args.batch_size, args.num_epochs, args.fixed_num_steps, args.image_feature, args.num_layers,
+                args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
+                args.val_metric, args.patience, args.model_dir, args.model_name)
 
 
 if __name__ == "__main__":
