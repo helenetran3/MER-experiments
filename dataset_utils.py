@@ -145,7 +145,7 @@ def get_fold_ids(with_custom_split):
     return train_ids, valid_ids, test_ids
 
 
-def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
+def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold, pickle_folder):
     """
     For each training, validation and test sets, create three lists:
     - one for features (x): arrays of shape (number steps, number features) for text/image/audio features (concatenated
@@ -247,6 +247,25 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature):
     print("Number of validation datapoints: {} ({:.2f}%)".format(valid_size, 100 * (valid_size / total_data_split)))
     print("Number of test datapoints: {} ({:.2f}%)".format(test_size, 100 * (test_size / total_data_split)))
 
+    train_res = [x_train, y_train, seg_train]
+    valid_res = [x_valid, y_valid, seg_valid]
+    test_res = [x_test, y_test, seg_test]
+
+    # Save lists with pickle
+    pickle_train = pickle_name_fold + "_train.pkl"
+    pickle_valid = pickle_name_fold + "_valid.pkl"
+    pickle_test = pickle_name_fold + "_test.pkl"
+    pickle_train_path = os.path.join(pickle_folder, pickle_train)
+    pickle_valid_path = os.path.join(pickle_folder, pickle_valid)
+    pickle_test_path = os.path.join(pickle_folder, pickle_test)
+    with open(pickle_train_path, 'wb') as fw_train:
+        pickle.dump(train_res, fw_train)
+    with open(pickle_valid_path, 'wb') as fw_valid:
+        pickle.dump(valid_res, fw_valid)
+    with open(pickle_test_path, 'wb') as fw_test:
+        pickle.dump(test_res, fw_test)
+
+    # TODO: Change to train_res, valid_res, test_res and change train_model accordingly
     return x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test
 
 
@@ -290,6 +309,7 @@ def datapoint_generator(x_list, y_list, seg_list, with_fixed_length, fixed_num_s
     else:
         for i in range(len(x_list)):
             x_list_i = x_list[i] if not with_fixed_length else seq_with_fixed_length(x_list[i], fixed_num_steps)
+            x_list_i = np.expand_dims(x_list_i, axis=0)
             yield x_list_i, y_list[i], seg_list[i]
 
 

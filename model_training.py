@@ -57,18 +57,11 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
     return model
 
 
-def train_model(full_dataset, train_ids, valid_ids, test_ids,
-                batch_size, num_epochs, fixed_num_steps, image_feature, num_layers,
+def train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test,
+                batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
                 val_metric, patience, model_dir, model_name):
-    # epochs,
 
-    # Create lists of features/labels/segment_ids for training, validation and test sets
-    x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test = split_dataset(full_dataset,
-                                                                                                       train_ids,
-                                                                                                       valid_ids,
-                                                                                                       test_ids,
-                                                                                                       image_feature)
     num_train_samples = len(y_train)
     num_valid_samples = len(y_valid)
 

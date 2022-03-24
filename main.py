@@ -1,4 +1,4 @@
-from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids
+from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, split_dataset
 from model_training import train_model
 import argparse
 import os
@@ -12,8 +12,10 @@ parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSE
                                              "Language (Challenge-HML) (pp. 11-19).")
 parser.add_argument('-df', '--dataset_folder', type=str,
                     help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded.")
-parser.add_argument('-pn', '--pickle_name', type=str,
+parser.add_argument('-pnd', '--pickle_name_dataset', type=str,
                     help="Name of the pickle object that will contain the CMU-MOSEI mmdataset.")
+parser.add_argument('-pnf', '--pickle_name_fold', type=str,
+                    help="Name of the pickle object that will contain the training, validation and test folds.")
 parser.add_argument('-pf', '--pickle_folder', type=str,
                     help="Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset.")
 parser.add_argument('-t', '--align_to_text', action='store_true',
@@ -55,22 +57,32 @@ args = parser.parse_args()
 
 
 def main():
-    pickle_path = os.path.join(args.pickle_folder, args.pickle_name + ".pkl")
+    pickle_dataset_path = os.path.join(args.pickle_folder, args.pickle_name_dataset + ".pkl")
 
     # Download CMU-MOSEI dataset using SDK and save with pickle
-    if not os.path.exists(pickle_path):
-        download_dataset(args.dataset_folder, args.pickle_name, args.pickle_folder,
+    if not os.path.exists(pickle_dataset_path):
+        download_dataset(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
                          args.align_to_text, args.append_label_to_data)
 
-    # Get CMU-MOSEI mmdataset object from pickle
-    dataset = load_dataset_from_pickle(args.pickle_name, args.pickle_folder)
+    # Get CMU-MOSEI mmdataset object from pickle #TODO: No need to load the dataset if we save the lists of folds
+    dataset = load_dataset_from_pickle(args.pickle_name_dataset, args.pickle_folder)
 
     # Get ids of standard train, valid and test folds (provided by the SDK)
     train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
+    # pickle_train = args.pickle_name_fold + "_train.pkl"
+    # pickle_train_path = os.path.join(args.pickle_folder, pickle_train)
+    # if not os.path.exists(pickle_train_path):  # TODO: Check whether the pickle files containing the folds exist
+    x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test = split_dataset(dataset,
+                                                                                                       train_ids,
+                                                                                                       valid_ids,
+                                                                                                       test_ids,
+                                                                                                       args.image_feature,
+                                                                                                       args.pickle_name_fold,
+                                                                                                       args.pickle_folder)
 
     # Model training
-    train_model(dataset, train_ids, valid_ids, test_ids,
-                args.batch_size, args.num_epochs, args.fixed_num_steps, args.image_feature, args.num_layers,
+    train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test,
+                args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
                 args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
                 args.val_metric, args.patience, args.model_dir, args.model_name)
 

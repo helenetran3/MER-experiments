@@ -13,9 +13,10 @@
  
 #===============================================================================
 
-python3 ./main.py \
+python3 main.py \
 --dataset_folder cmu_mosei/ \
---pickle_name cmu_mosei \
+--pickle_name_dataset cmu_mosei \
+--pickle_name_fold fold \
 --pickle_folder cmu_mosei/pickle_files/ \
 --align_to_text \
 --append_label_to_data \
