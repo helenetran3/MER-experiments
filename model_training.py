@@ -57,11 +57,38 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
     return model
 
 
-def train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test,
+def train_model(train_list, valid_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
                 val_metric, patience, model_dir, model_name):
+    """
+    Train the model.
 
+    :param train_list: [x_train, y_train, seg_train] where x_train is a list of arrays of shape (number steps, number
+    features), y_train a list arrays of shape (1, 7), and seg_train a list of segment ids (ex: 'zk2jTlAtvSU[1]')
+    :param valid_list: [x_valid, y_valid, seg_valid]
+    :param batch_size: Batch size for training
+    :param num_epochs: Maximum number of epochs for training
+    :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
+    :param num_layers: Number of bidirectional layers for the model
+    :param num_nodes: Number of nodes for the penultimate dense layer
+    :param dropout_rate: Dropout rate before each dense layer
+    :param final_activ: Final activation function
+    :param learning_rate: Learning rate for training
+    :param loss_function: Loss function
+    :param val_metric: Metric on validation data to monitor
+    :param patience: Number of epochs with no improvement after which the training will be stopped
+    :param model_dir: Name of the directory where the models will be saved
+    :param model_name: Name of the model to be saved
+    :return: history of the model training
+    """
+
+    x_train = train_list[0]
+    y_train = train_list[1]
+    seg_train = train_list[2]
+    x_valid = valid_list[0]
+    y_valid = valid_list[1]
+    seg_valid = valid_list[2]
     num_train_samples = len(y_train)
     num_valid_samples = len(y_valid)
 
@@ -69,7 +96,6 @@ def train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, s
     with_fixed_length = (fixed_num_steps > 0)
     train_dataset = get_dataset(x_train, y_train, seg_train, batch_size, with_fixed_length, fixed_num_steps)
     valid_dataset = get_dataset(x_valid, y_valid, seg_valid, batch_size, with_fixed_length, fixed_num_steps)
-    test_dataset = get_dataset(x_test, y_test, seg_test, batch_size, with_fixed_length, fixed_num_steps)
 
     # Parameters to save model
     if not os.path.isdir(model_dir):
@@ -108,4 +134,4 @@ def train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, s
                         validation_steps=num_valid_samples // batch_size,
                         callbacks=[checkpoint, early_stopping])
 
-
+    return history

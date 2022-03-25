@@ -93,7 +93,7 @@ def load_dataset_from_pickle(pickle_name, pickle_folder):
     with open(pickle_path, 'rb') as fr:
         cmu_mosei = pickle.load(fr)
 
-    print("CMU-MOSEI dataset loaded from pickle")
+    print("CMU-MOSEI dataset loaded from pickle.")
     print("The existing computational sequences in dataset are: {}".format(list(cmu_mosei.keys())))
 
     return cmu_mosei
@@ -314,8 +314,7 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     with open(pickle_test_path, 'wb') as fw_test:
         pickle.dump(test_res, fw_test)
 
-    # TODO: Change to train_res, valid_res, test_res and change train_model accordingly
-    return x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test
+    return train_res, valid_res, test_res
 
 
 def seq_with_fixed_length(seq_array, fixed_num_steps):

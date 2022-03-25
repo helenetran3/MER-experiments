@@ -4,7 +4,6 @@ from model_training import train_model
 import argparse
 import os
 
-
 parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSEI database. "
                                              "Related paper: "
                                              "Williams, J., Kleinegesse, S., Comanescu, R., & Radu, O. (2018, July). "
@@ -58,7 +57,6 @@ args = parser.parse_args()
 
 
 def main():
-
     # Download CMU-MOSEI dataset using SDK and save with pickle
     if not pickle_file_exists(args.pickle_name_dataset, args.pickle_folder, dataset_else_fold=True):
         download_dataset(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
@@ -70,22 +68,21 @@ def main():
     # Get ids of standard train, valid and test folds (provided by the SDK)
     train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
     if not pickle_file_exists(args.pickle_name_fold, args.pickle_folder, dataset_else_fold=False):
-        x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test = split_dataset(dataset,
-                                                                                                           train_ids,
-                                                                                                           valid_ids,
-                                                                                                           test_ids,
-                                                                                                           args.image_feature,
-                                                                                                           args.pickle_name_fold,
-                                                                                                           args.pickle_folder)
+        train_list, valid_list, test_list = split_dataset(dataset,
+                                                          train_ids,
+                                                          valid_ids,
+                                                          test_ids,
+                                                          args.image_feature,
+                                                          args.pickle_name_fold,
+                                                          args.pickle_folder)
     else:
         train_list, valid_list, test_list = load_folds_from_pickle(args.pickle_name_fold, args.pickle_folder)
 
-
     # Model training
-    # train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test,
-    #             args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
-    #             args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
-    #             args.val_metric, args.patience, args.model_dir, args.model_name)
+    history = train_model(train_list, valid_list,
+                          args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
+                          args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
+                          args.val_metric, args.patience, args.model_dir, args.model_name)
 
 
 if __name__ == "__main__":
