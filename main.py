@@ -1,8 +1,6 @@
-from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids
+from dataset_utils import get_dataset_from_sdk, get_data_folds, load_folds_from_pickle, pickle_file_exists
 from model_training import train_model
 import argparse
-import os
-
 
 parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSEI database. "
                                              "Related paper: "
@@ -12,8 +10,10 @@ parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSE
                                              "Language (Challenge-HML) (pp. 11-19).")
 parser.add_argument('-df', '--dataset_folder', type=str,
                     help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded.")
-parser.add_argument('-pn', '--pickle_name', type=str,
+parser.add_argument('-pnd', '--pickle_name_dataset', type=str,
                     help="Name of the pickle object that will contain the CMU-MOSEI mmdataset.")
+parser.add_argument('-pnf', '--pickle_name_fold', type=str,
+                    help="Name of the pickle object that will contain the training, validation and test folds.")
 parser.add_argument('-pf', '--pickle_folder', type=str,
                     help="Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset.")
 parser.add_argument('-t', '--align_to_text', action='store_true',
@@ -39,7 +39,7 @@ parser.add_argument('-d', '--dropout_rate', type=float,
                     help="Dropout rate")
 parser.add_argument('-a', '--final_activ', type=str,
                     help="Activation function of the final layer.")
-parser.add_argument('-md', '--model_dir', type=str,
+parser.add_argument('-mf', '--model_folder', type=str,
                     help="Name of the directory where the models will be saved.")
 parser.add_argument('-mn', '--model_name', type=str,
                     help="Name of the model to be saved.")
@@ -55,24 +55,24 @@ args = parser.parse_args()
 
 
 def main():
-    pickle_path = os.path.join(args.pickle_folder, args.pickle_name + ".pkl")
+    if pickle_file_exists(args.pickle_name_fold, args.pickle_folder, dataset_else_fold=False):
+        train_list, valid_list, test_list = load_folds_from_pickle(args.pickle_name_fold, args.pickle_folder)
 
-    # Download CMU-MOSEI dataset using SDK and save with pickle
-    if not os.path.exists(pickle_path):
-        download_dataset(args.dataset_folder, args.pickle_name, args.pickle_folder,
-                         args.align_to_text, args.append_label_to_data)
+    else:
+        # Load CMU-MOSEI dataset
+        dataset = get_dataset_from_sdk(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
+                                       args.align_to_text, args.append_label_to_data)
 
-    # Get CMU-MOSEI mmdataset object from pickle
-    dataset = load_dataset_from_pickle(args.pickle_name, args.pickle_folder)
-
-    # Get ids of standard train, valid and test folds (provided by the SDK)
-    train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
+        # Get data for training, validation and test sets (split provided by the SDK)
+        train_list, valid_list, test_list = get_data_folds(dataset,
+                                                           args.with_custom_split, args.pickle_name_fold,
+                                                           args.pickle_folder, args.image_feature)
 
     # Model training
-    train_model(dataset, train_ids, valid_ids, test_ids,
-                args.batch_size, args.num_epochs, args.fixed_num_steps, args.image_feature, args.num_layers,
-                args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
-                args.val_metric, args.patience, args.model_dir, args.model_name)
+    history = train_model(train_list, valid_list,
+                          args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
+                          args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
+                          args.val_metric, args.patience, args.model_folder, args.model_name)
 
 
 if __name__ == "__main__":
