@@ -1,8 +1,6 @@
-from dataset_utils import pickle_file_exists, download_dataset, load_dataset_from_pickle, get_fold_ids, split_dataset
-from dataset_utils import load_folds_from_pickle
+from dataset_utils import get_dataset_from_sdk, get_data_folds
 from model_training import train_model
 import argparse
-import os
 
 parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSEI database. "
                                              "Related paper: "
@@ -57,26 +55,14 @@ args = parser.parse_args()
 
 
 def main():
-    # Download CMU-MOSEI dataset using SDK and save with pickle
-    if not pickle_file_exists(args.pickle_name_dataset, args.pickle_folder, dataset_else_fold=True):
-        download_dataset(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
-                         args.align_to_text, args.append_label_to_data)
+    # Load CMU-MOSEI dataset
+    dataset = get_dataset_from_sdk(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
+                                   args.align_to_text, args.append_label_to_data)
 
-    # Get CMU-MOSEI mmdataset object from pickle #TODO: No need to load the dataset if we save the lists of folds
-    dataset = load_dataset_from_pickle(args.pickle_name_dataset, args.pickle_folder)
-
-    # Get ids of standard train, valid and test folds (provided by the SDK)
-    train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
-    if not pickle_file_exists(args.pickle_name_fold, args.pickle_folder, dataset_else_fold=False):
-        train_list, valid_list, test_list = split_dataset(dataset,
-                                                          train_ids,
-                                                          valid_ids,
-                                                          test_ids,
-                                                          args.image_feature,
-                                                          args.pickle_name_fold,
-                                                          args.pickle_folder)
-    else:
-        train_list, valid_list, test_list = load_folds_from_pickle(args.pickle_name_fold, args.pickle_folder)
+    # Get data for training, validation and test sets (split provided by the SDK)
+    train_list, valid_list, test_list = get_data_folds(dataset,
+                                                       args.with_custom_split, args.pickle_name_fold,
+                                                       args.pickle_folder, args.image_feature)
 
     # Model training
     history = train_model(train_list, valid_list,

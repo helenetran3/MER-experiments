@@ -2,7 +2,7 @@ import os.path
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
-from dataset_utils import split_dataset, get_dataset
+from dataset_utils import split_dataset, get_tf_dataset
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
@@ -94,8 +94,8 @@ def train_model(train_list, valid_list,
 
     # Create TensorFlow datasets for model training
     with_fixed_length = (fixed_num_steps > 0)
-    train_dataset = get_dataset(x_train, y_train, seg_train, batch_size, with_fixed_length, fixed_num_steps)
-    valid_dataset = get_dataset(x_valid, y_valid, seg_valid, batch_size, with_fixed_length, fixed_num_steps)
+    train_dataset = get_tf_dataset(x_train, y_train, seg_train, batch_size, with_fixed_length, fixed_num_steps)
+    valid_dataset = get_tf_dataset(x_valid, y_valid, seg_valid, batch_size, with_fixed_length, fixed_num_steps)
 
     # Parameters to save model
     if not os.path.isdir(model_dir):
