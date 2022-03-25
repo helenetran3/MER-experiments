@@ -290,6 +290,7 @@ def datapoint_generator(x_list, y_list, seg_list, with_fixed_length, fixed_num_s
     else:
         for i in range(len(x_list)):
             x_list_i = x_list[i] if not with_fixed_length else seq_with_fixed_length(x_list[i], fixed_num_steps)
+	    x_list_i = np.expand_dims(x_list_i, axis=0)
             yield x_list_i, y_list[i], seg_list[i]
 
 
