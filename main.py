@@ -1,5 +1,5 @@
 from dataset_utils import get_dataset_from_sdk, get_data_folds, load_folds_from_pickle, pickle_file_exists
-from model_training import train_model
+from model_training import train_model, evaluate_model
 import argparse
 
 parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSEI database. "
@@ -69,10 +69,13 @@ def main():
                                                            args.pickle_folder, args.image_feature)
 
     # Model training
-    history = train_model(train_list, valid_list,
+    history = train_model(train_list, valid_list, test_list,
                           args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
                           args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
                           args.val_metric, args.patience, args.model_folder, args.model_name)
+
+    evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.num_layers, args.num_nodes, args.dropout_rate,
+                   args.loss_function, args.model_folder, args.model_name)
 
 
 if __name__ == "__main__":

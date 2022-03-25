@@ -1,4 +1,5 @@
 import os.path
+import numpy as np
 
 from dataset_utils import get_tf_dataset
 
@@ -7,6 +8,7 @@ from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
+from sklearn.metrics import confusion_matrix
 
 def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, final_activ):
     """
@@ -57,7 +59,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
     return model
 
 
-def train_model(train_list, valid_list,
+def train_model(train_list, valid_list, test_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
                 val_metric, patience, model_folder, model_name):
@@ -67,6 +69,7 @@ def train_model(train_list, valid_list,
     :param train_list: [x_train, y_train, seg_train] where x_train is a list of arrays of shape (number steps, number
     features), y_train a list arrays of shape (1, 7), and seg_train a list of segment ids (ex: 'zk2jTlAtvSU[1]')
     :param valid_list: [x_valid, y_valid, seg_valid]
+    :param test_list: [x_test, y_test, seg_test]
     :param batch_size: Batch size for training
     :param num_epochs: Maximum number of epochs for training
     :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
@@ -91,6 +94,8 @@ def train_model(train_list, valid_list,
     seg_valid = valid_list[2]
     num_train_samples = len(y_train)
     num_valid_samples = len(y_valid)
+    num_test_samples = len(test_list[1])
+    total_data = num_train_samples + num_valid_samples + num_test_samples
 
     # Create TensorFlow datasets for model training
     with_fixed_length = (fixed_num_steps > 0)
@@ -128,9 +133,23 @@ def train_model(train_list, valid_list,
     optimizer = Adam(learning_rate=learning_rate)
     model.compile(loss=loss_function, optimizer=optimizer)
 
-    # print()  # TODO: Print all parameters
+    print("\n\n============================== Training Parameters ===========================================")
+    print("Number training datapoints: {} ({:.2f}%)".format(num_train_samples, 100 * (num_train_samples / total_data)))
+    print("Number validation datapoints: {} ({:.2f}%)".format(num_valid_samples, 100 * (num_valid_samples / total_data)))
+    print("Number test datapoints: {} ({:.2f}%)".format(num_test_samples, 100 * (num_test_samples / total_data)))
+    print("Batch size:", batch_size)
+    print("Number epochs:", num_epochs)
+    print("Fixed number of steps:", fixed_num_steps)
+    print("Number layers:", num_layers)
+    print("Number nodes for the penultimate dense layer:", num_nodes)
+    print("Dropout rate:", dropout_rate)
+    print("Final activation:", final_activ)
+    print("Learning rate:", learning_rate)
+    print("Loss function:", loss_function)
+    print("Metric to monitor on validation data:", val_metric)
+    print("Patience:", patience)
 
-    print("================================= Model Training ===========================================")
+    print("\n\n================================= Model Training =============================================")
     history = model.fit(x=train_dataset,
                         epochs=num_epochs,
                         verbose=1,
@@ -144,10 +163,23 @@ def train_model(train_list, valid_list,
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
                    model_folder, model_name):
+    """
+    Evaluate the performance of the best model.
+
+    :param test_list: [x_test, y_test, seg_test]
+    :param batch_size: Batch size for training
+    :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
+    :param num_layers: Number of bidirectional layers for the model
+    :param num_nodes: Number of nodes for the penultimate dense layer
+    :param dropout_rate: Dropout rate before each dense layer
+    :param loss_function: Loss function
+    :param model_folder: Name of the directory where the best model is saved
+    :param model_name: Name of the saved model
+    """
+
     x_test = test_list[0]
     y_test = test_list[1]
     seg_test = test_list[2]
-    num_test_samples = len(y_test)
 
     # Create TensorFlow test dataset for model evaluation
     with_fixed_length = (fixed_num_steps > 0)
@@ -160,10 +192,20 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
 
-    print("================================= Model Evaluation ===========================================")
-
+    # Model evaluation and prediction
+    print("\n\n================================= Model Evaluation ===========================================")
     print("{}: {}".format(loss_function, model.evaluate(test_dataset, verbose=1)))
-    predictions = model.predict(test_dataset, verbose=1, steps=num_test_samples)
-    print(predictions.shape)
 
-    #TODO: Plot confusion matrix here
+    # # Model prediction
+    # print("\n\n================================= Model Prediction ===========================================")
+    # predictions = model.predict(test_dataset, verbose=1, steps=num_test_samples)
+    # predictions = predictions.flatten()
+    # print(predictions.shape)  # (4654, 7)
+    # print("Predictions:", predictions[:20])
+    #
+    # true_labels = np.array(y_test).flatten()
+    # print(true_labels.shape)
+    # print("true_labels:", true_labels[:20])
+    # print(confusion_matrix(true_labels, predictions))
+    #
+    # #TODO: Plot confusion matrix here

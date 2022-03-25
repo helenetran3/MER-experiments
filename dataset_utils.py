@@ -410,10 +410,10 @@ def datapoint_generator(x_list, y_list, seg_list, with_fixed_length, fixed_num_s
         print("x_list, y_list, seg_list do not have the same number of elements")
 
     else:
-        for i in range(len(x_list)):
-            x_list_i = x_list[i] if not with_fixed_length else seq_with_fixed_length(x_list[i], fixed_num_steps)
+        for x_list_i, y_list_i, seg_list_i in zip(x_list, y_list, seg_list):
+            x_list_i = x_list_i if not with_fixed_length else seq_with_fixed_length(x_list_i, fixed_num_steps)
             x_list_i = x_list_i[None, :]
-            yield x_list_i, y_list[i]#, seg_list[i]
+            yield x_list_i, y_list_i  #, seg_list_i
 
 
 def get_tf_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixed_num_steps, train_mode):
