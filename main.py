@@ -1,4 +1,5 @@
-from dataset_utils import download_dataset, load_dataset_from_pickle, get_fold_ids, split_dataset
+from dataset_utils import pickle_file_exists, download_dataset, load_dataset_from_pickle, get_fold_ids, split_dataset
+from dataset_utils import load_folds_from_pickle
 from model_training import train_model
 import argparse
 import os
@@ -57,10 +58,9 @@ args = parser.parse_args()
 
 
 def main():
-    pickle_dataset_path = os.path.join(args.pickle_folder, args.pickle_name_dataset + ".pkl")
 
     # Download CMU-MOSEI dataset using SDK and save with pickle
-    if not os.path.exists(pickle_dataset_path):
+    if not pickle_file_exists(args.pickle_name_dataset, args.pickle_folder, dataset_else_fold=True):
         download_dataset(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
                          args.align_to_text, args.append_label_to_data)
 
@@ -69,22 +69,23 @@ def main():
 
     # Get ids of standard train, valid and test folds (provided by the SDK)
     train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
-    # pickle_train = args.pickle_name_fold + "_train.pkl"
-    # pickle_train_path = os.path.join(args.pickle_folder, pickle_train)
-    # if not os.path.exists(pickle_train_path):  # TODO: Check whether the pickle files containing the folds exist
-    x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test = split_dataset(dataset,
-                                                                                                       train_ids,
-                                                                                                       valid_ids,
-                                                                                                       test_ids,
-                                                                                                       args.image_feature,
-                                                                                                       args.pickle_name_fold,
-                                                                                                       args.pickle_folder)
+    if not pickle_file_exists(args.pickle_name_fold, args.pickle_folder, dataset_else_fold=False):
+        x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test = split_dataset(dataset,
+                                                                                                           train_ids,
+                                                                                                           valid_ids,
+                                                                                                           test_ids,
+                                                                                                           args.image_feature,
+                                                                                                           args.pickle_name_fold,
+                                                                                                           args.pickle_folder)
+    else:
+        train_list, valid_list, test_list = load_folds_from_pickle(args.pickle_name_fold, args.pickle_folder)
+
 
     # Model training
-    train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test,
-                args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
-                args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
-                args.val_metric, args.patience, args.model_dir, args.model_name)
+    # train_model(x_train, x_valid, x_test, y_train, y_valid, y_test, seg_train, seg_valid, seg_test,
+    #             args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
+    #             args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
+    #             args.val_metric, args.patience, args.model_dir, args.model_name)
 
 
 if __name__ == "__main__":
