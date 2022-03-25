@@ -31,7 +31,7 @@ python3 main.py \
 --model_folder models/ \
 --model_name MultimodalDNN \
 --num_epochs 200 \
---patience 30 \
+--patience 1 \
 --learning_rate 0.001 \
 --loss_function mean_absolute_error
 #--with_custom_split \

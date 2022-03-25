@@ -416,7 +416,7 @@ def datapoint_generator(x_list, y_list, seg_list, with_fixed_length, fixed_num_s
             yield x_list_i, y_list[i]#, seg_list[i]
 
 
-def get_tf_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixed_num_steps):
+def get_tf_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixed_num_steps, train_mode):
     """
     Returns a TensorFlow dataset from a datapoint generator.
     #TODO Case where the number of steps is not fixed
@@ -440,6 +440,6 @@ def get_tf_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixe
                                                     tf.TensorSpec(shape=(1, 7), dtype=tf.float64)
                                                     # tf.TensorSpec(shape=(), dtype=tf.string)
                                                 ))
-    tf_dataset.shuffle(len(seg_list)).batch(batch_size).repeat()
+    tf_dataset.shuffle(len(seg_list)).batch(batch_size).repeat() if train_mode else tf_dataset.batch(1).repeat(1)
 
     return tf_dataset

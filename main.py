@@ -57,7 +57,7 @@ args = parser.parse_args()
 def main():
     if pickle_file_exists(args.pickle_name_fold, args.pickle_folder, dataset_else_fold=False):
         train_list, valid_list, test_list = load_folds_from_pickle(args.pickle_name_fold, args.pickle_folder)
-        
+
     else:
         # Load CMU-MOSEI dataset
         dataset = get_dataset_from_sdk(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,

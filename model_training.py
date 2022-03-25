@@ -1,9 +1,9 @@
 import os.path
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
-from dataset_utils import split_dataset, get_tf_dataset
+from dataset_utils import get_tf_dataset
 
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
@@ -94,8 +94,10 @@ def train_model(train_list, valid_list,
 
     # Create TensorFlow datasets for model training
     with_fixed_length = (fixed_num_steps > 0)
-    train_dataset = get_tf_dataset(x_train, y_train, seg_train, batch_size, with_fixed_length, fixed_num_steps)
-    valid_dataset = get_tf_dataset(x_valid, y_valid, seg_valid, batch_size, with_fixed_length, fixed_num_steps)
+    train_dataset = get_tf_dataset(x_train, y_train, seg_train, batch_size, with_fixed_length, fixed_num_steps,
+                                   train_mode=True)
+    valid_dataset = get_tf_dataset(x_valid, y_valid, seg_valid, batch_size, with_fixed_length, fixed_num_steps,
+                                   train_mode=True)
 
     # Parameters to save model
     if not os.path.isdir(model_folder):
@@ -126,6 +128,9 @@ def train_model(train_list, valid_list,
     optimizer = Adam(learning_rate=learning_rate)
     model.compile(loss=loss_function, optimizer=optimizer)
 
+    # print()  # TODO: Print all parameters
+
+    print("================================= Model Training ===========================================")
     history = model.fit(x=train_dataset,
                         epochs=num_epochs,
                         verbose=1,
@@ -135,3 +140,30 @@ def train_model(train_list, valid_list,
                         callbacks=[checkpoint, early_stopping])
 
     return history
+
+
+def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
+                   model_folder, model_name):
+    x_test = test_list[0]
+    y_test = test_list[1]
+    seg_test = test_list[2]
+    num_test_samples = len(y_test)
+
+    # Create TensorFlow test dataset for model evaluation
+    with_fixed_length = (fixed_num_steps > 0)
+    test_dataset = get_tf_dataset(x_test, y_test, seg_test, batch_size, with_fixed_length, fixed_num_steps,
+                                  train_mode=True)
+
+    # Load best model
+    model_save_name = "{}_l_{}_n_{}_d_{}_b_{}_s_{}.h5".format(model_name, num_layers, num_nodes, dropout_rate,
+                                                              batch_size, fixed_num_steps)
+    model_save_path = os.path.join(model_folder, model_save_name)
+    model = load_model(model_save_path)
+
+    print("================================= Model Evaluation ===========================================")
+
+    print("{}: {}".format(loss_function, model.evaluate(test_dataset, verbose=1)))
+    predictions = model.predict(test_dataset, verbose=1, steps=num_test_samples)
+    print(predictions.shape)
+
+    #TODO: Plot confusion matrix here
