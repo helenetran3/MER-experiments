@@ -1,4 +1,4 @@
-from dataset_utils import get_dataset_from_sdk, get_data_folds
+from dataset_utils import get_dataset_from_sdk, get_data_folds, load_folds_from_pickle, pickle_file_exists
 from model_training import train_model
 import argparse
 
@@ -39,7 +39,7 @@ parser.add_argument('-d', '--dropout_rate', type=float,
                     help="Dropout rate")
 parser.add_argument('-a', '--final_activ', type=str,
                     help="Activation function of the final layer.")
-parser.add_argument('-md', '--model_dir', type=str,
+parser.add_argument('-mf', '--model_folder', type=str,
                     help="Name of the directory where the models will be saved.")
 parser.add_argument('-mn', '--model_name', type=str,
                     help="Name of the model to be saved.")
@@ -55,20 +55,24 @@ args = parser.parse_args()
 
 
 def main():
-    # Load CMU-MOSEI dataset
-    dataset = get_dataset_from_sdk(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
-                                   args.align_to_text, args.append_label_to_data)
+    if pickle_file_exists(args.pickle_name_fold, args.pickle_folder, dataset_else_fold=False):
+        train_list, valid_list, test_list = load_folds_from_pickle(args.pickle_name_fold, args.pickle_folder)
+        
+    else:
+        # Load CMU-MOSEI dataset
+        dataset = get_dataset_from_sdk(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
+                                       args.align_to_text, args.append_label_to_data)
 
-    # Get data for training, validation and test sets (split provided by the SDK)
-    train_list, valid_list, test_list = get_data_folds(dataset,
-                                                       args.with_custom_split, args.pickle_name_fold,
-                                                       args.pickle_folder, args.image_feature)
+        # Get data for training, validation and test sets (split provided by the SDK)
+        train_list, valid_list, test_list = get_data_folds(dataset,
+                                                           args.with_custom_split, args.pickle_name_fold,
+                                                           args.pickle_folder, args.image_feature)
 
     # Model training
     history = train_model(train_list, valid_list,
                           args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
                           args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
-                          args.val_metric, args.patience, args.model_dir, args.model_name)
+                          args.val_metric, args.patience, args.model_folder, args.model_name)
 
 
 if __name__ == "__main__":

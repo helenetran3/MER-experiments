@@ -30,7 +30,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
         model.add(Dropout(dropout_rate))
         model.add(Dense(num_nodes, activation="relu"))
         model.add(Dropout(dropout_rate))
-        model.add(Dense(6, activation=final_activ))
+        model.add(Dense(7, activation=final_activ))
 
     if num_layers == 2:
         model.add(BatchNormalization(input_shape=(num_steps, num_features)))
@@ -40,7 +40,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
         model.add(Dropout(dropout_rate))
         model.add(Dense(num_nodes, activation="relu"))
         model.add(Dropout(dropout_rate))
-        model.add(Dense(6, activation=final_activ))
+        model.add(Dense(7, activation=final_activ))
 
     if num_layers == 3:
         model.add(BatchNormalization(input_shape=(num_steps, num_features)))
@@ -52,7 +52,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
         model.add(Dropout(dropout_rate))
         model.add(Dense(num_nodes, activation="relu"))
         model.add(Dropout(dropout_rate))
-        model.add(Dense(6, activation=final_activ))
+        model.add(Dense(7, activation=final_activ))
 
     return model
 
@@ -60,7 +60,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
 def train_model(train_list, valid_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
-                val_metric, patience, model_dir, model_name):
+                val_metric, patience, model_folder, model_name):
     """
     Train the model.
 
@@ -78,7 +78,7 @@ def train_model(train_list, valid_list,
     :param loss_function: Loss function
     :param val_metric: Metric on validation data to monitor
     :param patience: Number of epochs with no improvement after which the training will be stopped
-    :param model_dir: Name of the directory where the models will be saved
+    :param model_folder: Name of the directory where the models will be saved
     :param model_name: Name of the model to be saved
     :return: history of the model training
     """
@@ -98,11 +98,11 @@ def train_model(train_list, valid_list,
     valid_dataset = get_tf_dataset(x_valid, y_valid, seg_valid, batch_size, with_fixed_length, fixed_num_steps)
 
     # Parameters to save model
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    if not os.path.isdir(model_folder):
+        os.mkdir(model_folder)
     model_save_name = "{}_l_{}_n_{}_d_{}_b_{}_s_{}.h5".format(model_name, num_layers, num_nodes, dropout_rate,
                                                               batch_size, fixed_num_steps)
-    model_save_path = os.path.join(model_dir, model_save_name)
+    model_save_path = os.path.join(model_folder, model_save_name)
 
     # Parameters for metric monitoring
     monitor = 'val_loss' if val_metric == 'loss' else 'val_accuracy'
