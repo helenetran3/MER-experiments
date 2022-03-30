@@ -57,6 +57,7 @@ args = parser.parse_args()
 
 def main():
 
+    # Get data for training, validation and test sets from pickle (split provided by the SDK)
     if pickle_file_exists(args.pickle_name_fold + "_train", args.pickle_folder):
         train_list = load_from_pickle(args.pickle_name_fold + "_train", args.pickle_folder)
         valid_list = load_from_pickle(args.pickle_name_fold + "_valid", args.pickle_folder)
