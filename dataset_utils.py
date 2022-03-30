@@ -1,9 +1,9 @@
 import os
 import re
-import pickle
 import numpy as np
 import tensorflow as tf
 from mmsdk import mmdatasdk
+from pickle_functions import pickle_file_exists, save_with_pickle, load_from_pickle
 
 
 # CMU-MOSEI DATA DOWNLOAD FUNCTIONS
@@ -30,13 +30,8 @@ def download_dataset(dataset_folder, pickle_name_dataset, pickle_folder, align_t
     :param append_label_to_data: whether we want data to align to the labels
     """
 
-    pickle_name_dataset += ".pkl"
-    pickle_path = os.path.join(pickle_folder, pickle_name_dataset)
-
-    if not os.path.isdir(pickle_folder):
-        os.mkdir(pickle_folder)
-
-    if os.path.exists(pickle_path):  # For safety. The function should be called only if the pickle obj does not exist
+    # The next two lines for safety. The function should be called only if the pickle obj does not exist
+    if pickle_file_exists(pickle_name_dataset, pickle_folder):
         print("{} already exists in {} folder. Please change the pickle name.".format(pickle_name_dataset, pickle_folder))
 
     else:
@@ -55,46 +50,7 @@ def download_dataset(dataset_folder, pickle_name_dataset, pickle_folder, align_t
             cmu_mosei.align('All Labels')
 
         # Save cmu_mosei mmdataset with pickle
-        with open(pickle_path, 'wb') as fw:
-            pickle.dump(cmu_mosei, fw)
-
-
-def pickle_file_exists(pickle_name, pickle_folder, dataset_else_fold):
-    """
-    Check whether a pickle file exists (mmdataset or list of folds)
-
-    :param pickle_name: name of the pickle object
-    :param pickle_folder: name of the folder where the pickle object is saved
-    :param dataset_else_fold: True if we want to check whether CMU-MOSEI mmdataset exists, False for lists of training,
-    validation and test folds
-    :return: True if the pickle file exists, else False
-    """
-
-    pickle_name_to_check = pickle_name + ".pkl" if dataset_else_fold else pickle_name + "_train.pkl"
-    pickle_path = os.path.join(pickle_folder, pickle_name_to_check)
-
-    return os.path.exists(pickle_path)
-
-
-def load_dataset_from_pickle(pickle_name, pickle_folder):
-    """
-    Load CMU-MOSEI dataset from pickle file.
-
-    :param pickle_name: name of the pickle object that contains the CMU-MOSEI mmdataset
-    :param pickle_folder: name of the folder where the pickle object is saved
-    :return: cmu_mosei: mmdataset object containing all data (aligned or not)
-    """
-
-    pickle_name += ".pkl"
-    pickle_path = os.path.join(pickle_folder, pickle_name)
-
-    with open(pickle_path, 'rb') as fr:
-        cmu_mosei = pickle.load(fr)
-
-    print("CMU-MOSEI dataset loaded from pickle.")
-    print("The existing computational sequences in dataset are: {}".format(list(cmu_mosei.keys())))
-
-    return cmu_mosei
+        save_with_pickle(cmu_mosei, pickle_name_dataset, pickle_folder)
 
 
 def get_dataset_from_sdk(dataset_folder, pickle_name_dataset, pickle_folder, align_to_text, append_label_to_data):
@@ -109,11 +65,14 @@ def get_dataset_from_sdk(dataset_folder, pickle_name_dataset, pickle_folder, ali
     :return: CMU-MOSEI mmdataset
     """
 
-    if not pickle_file_exists(pickle_name_dataset, pickle_folder, dataset_else_fold=True):
+    if not pickle_file_exists(pickle_name_dataset, pickle_folder):
+        # Download from sdk and save with pickle
         download_dataset(dataset_folder, pickle_name_dataset, pickle_folder, align_to_text, append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
-    dataset = load_dataset_from_pickle(pickle_name_dataset, pickle_folder)
+    dataset = load_from_pickle(pickle_name_dataset, pickle_folder)
+    print("CMU-MOSEI dataset loaded from pickle.")
+    print("The existing computational sequences in dataset are: {}".format(list(dataset.keys())))
 
     return dataset
 
@@ -292,82 +251,11 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     test_res = [x_test, y_test, seg_test]
 
     # Save lists with pickle
-    if not os.path.isdir(pickle_folder):
-        os.mkdir(pickle_folder)
-    pickle_train = pickle_name_fold + "_train.pkl"
-    pickle_valid = pickle_name_fold + "_valid.pkl"
-    pickle_test = pickle_name_fold + "_test.pkl"
-    pickle_train_path = os.path.join(pickle_folder, pickle_train)
-    pickle_valid_path = os.path.join(pickle_folder, pickle_valid)
-    pickle_test_path = os.path.join(pickle_folder, pickle_test)
-    with open(pickle_train_path, 'wb') as fw_train:
-        pickle.dump(train_res, fw_train)
-    with open(pickle_valid_path, 'wb') as fw_valid:
-        pickle.dump(valid_res, fw_valid)
-    with open(pickle_test_path, 'wb') as fw_test:
-        pickle.dump(test_res, fw_test)
+    save_with_pickle(train_res, pickle_name_fold + "_train.pkl", pickle_folder)
+    save_with_pickle(valid_res, pickle_name_fold + "_valid.pkl", pickle_folder)
+    save_with_pickle(test_res, pickle_name_fold + "_test.pkl", pickle_folder)
 
     return train_res, valid_res, test_res
-
-
-def load_folds_from_pickle(pickle_name, pickle_folder):
-    """
-    Load training, validation and test folds from pickle file.
-
-    :param pickle_name: root name of the pickle object that contains the training, validation and test folds
-    :param pickle_folder: name of the folder where the pickle object is saved
-    :return: train_list, valid_list, test_list: 3 lists of [x, y, seg_id] for training, validation and test sets
-    respectively.
-    x is a list of arrays of shape (number steps, number features)
-    y a list of arrays of shape (1, 7) for the 7 emotions
-    seg_id a list of ids of the segment described by (x, y) (ex: 'zk2jTlAtvSU[1]')
-    """
-
-    pickle_train = pickle_name + "_train.pkl"
-    pickle_valid = pickle_name + "_valid.pkl"
-    pickle_test = pickle_name + "_test.pkl"
-    pickle_train_path = os.path.join(pickle_folder, pickle_train)
-    pickle_valid_path = os.path.join(pickle_folder, pickle_valid)
-    pickle_test_path = os.path.join(pickle_folder, pickle_test)
-
-    with open(pickle_train_path, 'rb') as fr_train:
-        train_list = pickle.load(fr_train)
-    with open(pickle_valid_path, 'rb') as fr_valid:
-        valid_list = pickle.load(fr_valid)
-    with open(pickle_test_path, 'rb') as fr_test:
-        test_list = pickle.load(fr_test)
-
-    print("Training, validation, and test data loaded from pickle.")
-
-    return train_list, valid_list, test_list
-
-
-def get_data_folds(dataset, with_custom_split, pickle_name_fold, pickle_folder, image_feature):
-    """
-    Get three lists for training, validation and test sets respectively. Each list contains:
-    - a list of features (x): arrays of shape (number steps, number features) for text/image/audio features
-    (concatenated in this order)
-    - a list of labels (y): arrays of shape (1, 7), for the 7 emotions
-    - a list of segment ids (seg): id of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'
-
-    :param dataset: CMU-MOSEI mmdataset
-    :param with_custom_split: whether we perform custom_split proposed by the paper written by Williams et al. (ACL 2018)
-    :param pickle_name_fold: root name of the pickle object that contains the training, validation and test folds
-    :param pickle_folder: name of the folder where the pickle object is saved
-    :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
-    :return: 3 lists train_list = [x_train, y_train, seg_train], valid_list = [x_valid, y_valid, seg_valid],
-     test_list = [x_test, y_test, seg_test]
-    """
-    
-    train_ids, valid_ids, test_ids = get_fold_ids(with_custom_split)
-    if not pickle_file_exists(pickle_name_fold, pickle_folder, dataset_else_fold=False):
-        train_list, valid_list, test_list = split_dataset(dataset,
-                                                          train_ids, valid_ids, test_ids,
-                                                          image_feature, pickle_name_fold, pickle_folder)
-    else:
-        train_list, valid_list, test_list = load_folds_from_pickle(pickle_name_fold, pickle_folder)
-        
-    return train_list, valid_list, test_list
 
 
 # BUILD DATA GENERATOR AND TENSORFLOW DATASETS

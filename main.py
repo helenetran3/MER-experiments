@@ -1,4 +1,5 @@
-from dataset_utils import get_dataset_from_sdk, get_data_folds, load_folds_from_pickle, pickle_file_exists
+from pickle_functions import pickle_file_exists, load_from_pickle
+from dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset
 from model_training import train_model, evaluate_model
 import argparse
 
@@ -55,8 +56,11 @@ args = parser.parse_args()
 
 
 def main():
-    if pickle_file_exists(args.pickle_name_fold, args.pickle_folder, dataset_else_fold=False):
-        train_list, valid_list, test_list = load_folds_from_pickle(args.pickle_name_fold, args.pickle_folder)
+
+    if pickle_file_exists(args.pickle_name_fold + "_train", args.pickle_folder):
+        train_list = load_from_pickle(args.pickle_name_fold + "_train", args.pickle_folder)
+        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", args.pickle_folder)
+        test_list = load_from_pickle(args.pickle_name_fold + "_test", args.pickle_folder)
 
     else:
         # Load CMU-MOSEI dataset
@@ -64,9 +68,10 @@ def main():
                                        args.align_to_text, args.append_label_to_data)
 
         # Get data for training, validation and test sets (split provided by the SDK)
-        train_list, valid_list, test_list = get_data_folds(dataset,
-                                                           args.with_custom_split, args.pickle_name_fold,
-                                                           args.pickle_folder, args.image_feature)
+        train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
+        train_list, valid_list, test_list = split_dataset(dataset,
+                                                          train_ids, valid_ids, test_ids,
+                                                          args.image_feature, args.pickle_name_fold, args.pickle_folder)
 
     # Model training
     history = train_model(train_list, valid_list, test_list,
