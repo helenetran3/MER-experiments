@@ -196,52 +196,53 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
 
-    # Model prediction
     print("\n\n================================= Model Prediction ===========================================")
 
-    pred_save_name = "predictions_{}.h5".format(parameters_name)
-    true_save_name = "true_labels_{}.h5".format(parameters_name)
+    true_sc_save_name = "true_scores_{}.h5".format(parameters_name)
+    true_cl_save_name = "true_classes_{}.h5".format(parameters_name)
+    pred_raw_save_name = "pred_raw_{}.h5".format(parameters_name)
+    pred_sc_save_name = "pred_scores_{}.h5".format(parameters_name)
+    pred_cl_save_name = "pred_classes_{}.h5".format(parameters_name)
 
-    ## True labels
-    true_labels = np.array(y_test).flatten()
-    save_with_pickle(true_labels, true_save_name, model_folder)
-    # print("np.array(y_test).shape", np.array(y_test).shape)
-    # print("true_labels.shape", true_labels.shape)
-    # print("true_labels:", true_labels[:100])
+    # Presence score derived from true labels
+    true_scores = np.array(y_test).flatten()  # shape (32578,) > each 7 emotions correspond to one segment
+    save_with_pickle(true_scores, true_sc_save_name, model_folder)
 
-    ## Get all presence scores with Label Encoder
+    # Get all existing presence scores with Label Encoder
     le = LabelEncoder()
-    le.fit(true_labels)
-    classes = le.classes_ # [-3.         -2.6666667  -2.3333333  -2.         -1.6666666  -1.3333334
-                            # -1.         -0.6666667  -0.5        -0.33333334  0.          0.16666667
-                            # 0.33333334  0.5         0.6666667   0.8333333   1.          1.3333334
-                            # 1.6666666   2.          2.3333333   2.6666667   3.        ] (23 classes)
-    # print("classes", classes)
-    true_labels_classes = le.transform(true_labels)  # values from 0 to 22
-    # print("true_labels_classes:", true_labels_classes[:100])
+    le.fit(true_scores)
+    classes = le.classes_
+    # Should give the following (23 classes):
+    # [-3.         -2.6666667  -2.3333333  -2.          -1.6666666  -1.3333334
+    #  -1.         -0.6666667  -0.5        -0.33333334  0.          0.16666667
+    #  0.33333334  0.5         0.6666667   0.8333333    1.          1.3333334
+    #  1.6666666   2.          2.3333333   2.6666667    3.        ]
 
-    ## Predictions
-    if not pickle_file_exists(pred_save_name, model_folder):  # perform prediction (for debugging)
+    # Classes derived from true labels (useful for metrics including confusion matrix)
+    true_classes = le.transform(true_scores)  # values from 0 to 22
+    save_with_pickle(true_classes, true_cl_save_name, model_folder)
+
+    # Get raw predictions from the model
+    if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
         num_test_samples = len(y_test)
-        predictions = model.predict(test_dataset, verbose=1, steps=num_test_samples)
-        predictions = predictions.flatten()
-        save_with_pickle(predictions, pred_save_name, model_folder)
+        pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)
+        pred_raw = pred_raw.flatten()  # (32578,)
+        save_with_pickle(pred_raw, pred_raw_save_name, model_folder)
     else:
-        predictions = load_from_pickle(pred_save_name, model_folder)
+        pred_raw = load_from_pickle(pred_raw_save_name, model_folder)
 
-    # print("predictions.shape", predictions.shape)  # (32578,)
-    # print("predictions:", predictions[:100])
-    pred_labels = [min(classes, key=lambda x:abs(x-predictions[i])) for i in range(predictions.shape[0])]
-    pred_labels = np.array(pred_labels)  # pred_labels: get the closest class for each continuous value
-    # print("predictions_labels shape:", predictions_labels.shape)
-    # print("predictions_labels:", predictions_labels[:100])
-    pred_labels_classes = le.transform(pred_labels)  # values from 0 to 22
-    # print("pred_labels_classes:", pred_labels_classes[:100])
+    # Presence score derived from predictions
+    pred_scores = [min(classes, key=lambda x:abs(x-pred_raw[i])) for i in range(pred_raw.shape[0])]
+    pred_scores = np.array(pred_scores)  # pred_scores: get the closest class for each continuous value
+    save_with_pickle(pred_scores, pred_sc_save_name, model_folder)
 
-    ## Confusion matrix
-    conf_matrix = confusion_matrix(true_labels_classes, pred_labels_classes)
-    save_with_pickle(conf_matrix, 'conf_matrix' + model_save_name, model_folder)
-    # print(conf_matrix)
+    # Classes derived from predictions (useful for metrics including confusion matrix)
+    pred_classes = le.transform(pred_scores)  # values from 0 to 22
+    save_with_pickle(pred_classes, pred_cl_save_name, model_folder)
+
+    # Confusion matrix
+    conf_matrix = confusion_matrix(true_classes, pred_classes)
+    save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
 
     # Model evaluation and prediction
     print("\n\n================================= Model Evaluation ===========================================")
