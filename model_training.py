@@ -11,7 +11,8 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, balanced_accuracy_score, recall_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
 
 
 def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, final_activ):
@@ -166,7 +167,7 @@ def train_model(train_list, valid_list, test_list,
 
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
-                   model_folder, model_name, csv_folder, csv_name):
+                   model_folder, model_name, csv_folder, csv_name, round_decimals):
     """
     Evaluate the performance of the best model.
 
@@ -181,6 +182,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param model_name: Name of the saved model
     :param csv_folder: Name of the directory where the csv file containing the results is saved
     :param csv_name: Name of the csv file
+    :param round_decimals: Number of decimals to be rounded for metrics.
     """
 
     x_test = test_list[0]  # each element of shape (29, 409)
@@ -250,9 +252,37 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Model evaluation and prediction
     print("\n\n================================= Model Evaluation ===========================================")
     loss_function_val = model.evaluate(test_dataset, verbose=1)
-    print("{}: {}".format(loss_function, loss_function_val))
+    print("Loss function ({}): {}".format(loss_function, loss_function_val))
+    # Regression metrics
+    mae = round(mean_absolute_error(true_scores, pred_raw), round_decimals)
+    mse = round(mean_squared_error(true_scores, pred_raw), round_decimals)
+    print("Mean absolute error:", mae)
+    print("Mean squared error:", mse)
+    # Classification metrics
+    acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
+    acc_bal = round(balanced_accuracy_score(true_classes, pred_classes), round_decimals)
+    f1_micro = round(f1_score(true_classes, pred_classes, average='micro'), round_decimals)
+    f1_macro = round(f1_score(true_classes, pred_classes, average='macro'), round_decimals)
+    f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    rec_micro = round(recall_score(true_classes, pred_classes, average='micro'), round_decimals)
+    rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
+    rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    # roc_auc_macro = round(roc_auc_score(true_classes, pred_classes, average='macro', multi_class='ovr'), round_decimals)
+    # roc_auc_weighted = round(roc_auc_score(true_classes, pred_classes, average='weighted', multi_class='ovr'), round_decimals)
+    print("Accuracy:", acc)
+    print("Balanced accuracy:", acc_bal)
+    print("F1 score (all classes together):", f1_micro)
+    print("F1 score (F1 score for each + unweighted mean):", f1_macro)
+    print("F1 score (F1 score for each + weighted mean):", f1_weighted)
+    print("Recall (all classes together):", rec_micro)
+    print("Recall (recall for each + unweighted mean):", rec_macro)
+    print("Recall (recall for each + weighted mean):", rec_weighted)
+    # print("ROC AUC (score for each + unweighted mean):", roc_auc_macro)
+    # print("ROC AUC (score for each + weighted mean):", roc_auc_weighted)
 
-    save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size,
-                             fixed_num_steps, loss_function, loss_function_val)
+    save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+                             loss_function, loss_function_val, mae, mse,
+                             acc, acc_bal, f1_micro, f1_macro, f1_weighted, rec_micro, rec_macro, rec_weighted)
+                             # roc_auc_macro, roc_auc_weighted)
 
 

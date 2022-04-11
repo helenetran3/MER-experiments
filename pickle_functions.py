@@ -55,8 +55,10 @@ def load_from_pickle(pickle_name, pickle_folder):
     return p_object
 
 
-def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size,
-                             fixed_num_steps, loss_function, loss_function_val):
+def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+                             loss_function, loss_function_val, mae, mse,
+                             acc, acc_bal, f1_micro, f1_macro, f1_weighted, rec_micro, rec_macro, rec_weighted):
+                             # roc_auc_macro, roc_auc_weighted):
     """
     Save results of a single model to a csv file.
 
@@ -69,13 +71,27 @@ def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropou
     :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
     :param loss_function: Loss function
     :param loss_function_val: Loss function obtained by the model
+    :param mae: Mean absolute error
+    :param mse: Mean squared error
+    :param acc: Accuracy
+    :param acc_bal: Balanced accuracy
+    :param f1_micro: F1 score (all classes together)
+    :param f1_macro: F1 score (F1 score for each + unweighted mean)
+    :param f1_weighted: F1 score (F1 score for each + weighted mean)
+    :param rec_micro: Recall (all classes together)
+    :param rec_macro: Recall (recall for each + unweighted mean)
+    :param rec_weighted: Recall (recall for each + weighted mean)
+    # :param roc_auc_macro: ROC AUC score (score for each + unweighted mean) - computes AUC of each class vs the rest
+    # :param roc_auc_weighted: ROC AUC score (score for each + weighted mean) - computes AUC of each class vs the rest
     :return: One-line results added to the csv file.
     """
 
     csv_name += ".csv"
     csv_path = os.path.join(csv_folder, csv_name)
 
-    data_to_save = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, loss_function_val]
+    data_to_save = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, loss_function_val, mae, mse,
+                    acc, acc_bal, f1_micro, f1_macro, f1_weighted, rec_micro, rec_macro, rec_weighted]
+                    # roc_auc_macro, roc_auc_weighted]
 
     if not os.path.isdir(csv_folder):
         os.mkdir(csv_folder)
@@ -86,10 +102,11 @@ def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropou
             writer.writerow(data_to_save)
 
     else:
-        with open(csv_path, 'w', encoding='UTF8') as f: # Create file
+        with open(csv_path, 'w', encoding='UTF8') as f:  # Create file
             writer = csv.writer(f)
-            header = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps',
-                      loss_function]
+            header = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', loss_function, 'mae',
+                      'mse', 'acc', 'acc_bal', 'f1_micro', 'f1_macro', 'f1_weighted', 'rec_micro', 'rec_macro',
+                      'rec_weighted']  #, 'roc_auc_macro', 'roc_auc_weighted']
             writer.writerow(header)
             writer.writerow(data_to_save)
 

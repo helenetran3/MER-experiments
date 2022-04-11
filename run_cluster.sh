@@ -34,5 +34,6 @@ python3 main.py \
 --num_epochs 2 \
 --patience 1 \
 --learning_rate 0.001 \
---loss_function mean_absolute_error
+--loss_function mean_absolute_error \
+--round_decimals 3
 #--with_custom_split \
