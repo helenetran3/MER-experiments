@@ -1,6 +1,7 @@
 import os.path
 import numpy as np
 
+from pickle_functions import save_with_pickle, pickle_file_exists, load_from_pickle
 from dataset_utils import get_tf_dataset
 
 from tensorflow.keras.models import Sequential, load_model
@@ -8,7 +9,9 @@ from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
+from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix
+
 
 def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, final_activ):
     """
@@ -177,8 +180,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param model_name: Name of the saved model
     """
 
-    x_test = test_list[0]
-    y_test = test_list[1]
+    x_test = test_list[0]  # each element of shape (29, 409)
+    y_test = test_list[1]  # each element of shape (1, 7)
     seg_test = test_list[2]
 
     # Create TensorFlow test dataset for model evaluation
@@ -187,25 +190,59 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                   train_mode=True)
 
     # Load best model
-    model_save_name = "{}_l_{}_n_{}_d_{}_b_{}_s_{}.h5".format(model_name, num_layers, num_nodes, dropout_rate,
-                                                              batch_size, fixed_num_steps)
+    parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate,
+                                                        batch_size, fixed_num_steps)
+    model_save_name = "{}_{}.h5".format(model_name, parameters_name)
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
+
+    # Model prediction
+    print("\n\n================================= Model Prediction ===========================================")
+
+    pred_save_name = "predictions_{}.h5".format(parameters_name)
+    true_save_name = "true_labels_{}.h5".format(parameters_name)
+
+    ## True labels
+    true_labels = np.array(y_test).flatten()
+    save_with_pickle(true_labels, true_save_name, model_folder)
+    # print("np.array(y_test).shape", np.array(y_test).shape)
+    # print("true_labels.shape", true_labels.shape)
+    # print("true_labels:", true_labels[:100])
+
+    ## Get all presence scores with Label Encoder
+    le = LabelEncoder()
+    le.fit(true_labels)
+    classes = le.classes_ # [-3.         -2.6666667  -2.3333333  -2.         -1.6666666  -1.3333334
+                            # -1.         -0.6666667  -0.5        -0.33333334  0.          0.16666667
+                            # 0.33333334  0.5         0.6666667   0.8333333   1.          1.3333334
+                            # 1.6666666   2.          2.3333333   2.6666667   3.        ] (23 classes)
+    # print("classes", classes)
+    true_labels_classes = le.transform(true_labels)  # values from 0 to 22
+    # print("true_labels_classes:", true_labels_classes[:100])
+
+    ## Predictions
+    if not pickle_file_exists(pred_save_name, model_folder):  # perform prediction (for debugging)
+        num_test_samples = len(y_test)
+        predictions = model.predict(test_dataset, verbose=1, steps=num_test_samples)
+        predictions = predictions.flatten()
+        save_with_pickle(predictions, pred_save_name, model_folder)
+    else:
+        predictions = load_from_pickle(pred_save_name, model_folder)
+
+    # print("predictions.shape", predictions.shape)  # (32578,)
+    # print("predictions:", predictions[:100])
+    pred_labels = [min(classes, key=lambda x:abs(x-predictions[i])) for i in range(predictions.shape[0])]
+    pred_labels = np.array(pred_labels)  # pred_labels: get the closest class for each continuous value
+    # print("predictions_labels shape:", predictions_labels.shape)
+    # print("predictions_labels:", predictions_labels[:100])
+    pred_labels_classes = le.transform(pred_labels)  # values from 0 to 22
+    # print("pred_labels_classes:", pred_labels_classes[:100])
+
+    ## Confusion matrix
+    conf_matrix = confusion_matrix(true_labels_classes, pred_labels_classes)
+    save_with_pickle(conf_matrix, 'conf_matrix' + model_save_name, model_folder)
+    # print(conf_matrix)
 
     # Model evaluation and prediction
     print("\n\n================================= Model Evaluation ===========================================")
     print("{}: {}".format(loss_function, model.evaluate(test_dataset, verbose=1)))
-
-    # # Model prediction
-    # print("\n\n================================= Model Prediction ===========================================")
-    # predictions = model.predict(test_dataset, verbose=1, steps=num_test_samples)
-    # predictions = predictions.flatten()
-    # print(predictions.shape)  # (4654, 7)
-    # print("Predictions:", predictions[:20])
-    #
-    # true_labels = np.array(y_test).flatten()
-    # print(true_labels.shape)
-    # print("true_labels:", true_labels[:20])
-    # print(confusion_matrix(true_labels, predictions))
-    #
-    # #TODO: Plot confusion matrix here
