@@ -1,7 +1,8 @@
 import os.path
 import numpy as np
+import csv
 
-from pickle_functions import save_with_pickle, pickle_file_exists, load_from_pickle
+from pickle_functions import save_with_pickle, pickle_file_exists, load_from_pickle, save_results_in_csv_file
 from dataset_utils import get_tf_dataset
 
 from tensorflow.keras.models import Sequential, load_model
@@ -165,7 +166,7 @@ def train_model(train_list, valid_list, test_list,
 
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
-                   model_folder, model_name):
+                   model_folder, model_name, csv_folder, csv_name):
     """
     Evaluate the performance of the best model.
 
@@ -178,6 +179,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param loss_function: Loss function
     :param model_folder: Name of the directory where the best model is saved
     :param model_name: Name of the saved model
+    :param csv_folder: Name of the directory where the csv file containing the results is saved
+    :param csv_name: Name of the csv file
     """
 
     x_test = test_list[0]  # each element of shape (29, 409)
@@ -246,4 +249,10 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     # Model evaluation and prediction
     print("\n\n================================= Model Evaluation ===========================================")
-    print("{}: {}".format(loss_function, model.evaluate(test_dataset, verbose=1)))
+    loss_function_val = model.evaluate(test_dataset, verbose=1)
+    print("{}: {}".format(loss_function, loss_function_val))
+
+    save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size,
+                             fixed_num_steps, loss_function, loss_function_val)
+
+

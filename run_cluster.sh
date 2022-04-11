@@ -29,6 +29,8 @@ python3 main.py \
 --final_activ linear \
 --model_folder models/ \
 --model_name MultimodalDNN \
+--csv_folder models/csv/ \
+--csv_name MultimodalDNN-results \
 --num_epochs 2 \
 --patience 1 \
 --learning_rate 0.001 \

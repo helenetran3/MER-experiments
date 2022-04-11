@@ -1,4 +1,5 @@
 import os
+import csv
 import pickle
 
 
@@ -52,3 +53,43 @@ def load_from_pickle(pickle_name, pickle_folder):
         p_object = pickle.load(fr)
 
     return p_object
+
+
+def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size,
+                             fixed_num_steps, loss_function, loss_function_val):
+    """
+    Save results of a single model to a csv file.
+
+    :param csv_name: Name of the directory where the csv file containing the results is saved
+    :param csv_folder: Name of the csv file
+    :param num_layers: Number of bidirectional layers for the model
+    :param num_nodes: Number of nodes for the penultimate dense layer
+    :param dropout_rate: Dropout rate before each dense layer
+    :param batch_size: Batch size for training
+    :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
+    :param loss_function: Loss function
+    :param loss_function_val: Loss function obtained by the model
+    :return: One-line results added to the csv file.
+    """
+
+    csv_name += ".csv"
+    csv_path = os.path.join(csv_folder, csv_name)
+
+    data_to_save = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, loss_function_val]
+
+    if not os.path.isdir(csv_folder):
+        os.mkdir(csv_folder)
+
+    if os.path.exists(csv_path):
+        with open(csv_path, 'a+', newline='') as f:  # Open file in append mode
+            writer = csv.writer(f)
+            writer.writerow(data_to_save)
+
+    else:
+        with open(csv_path, 'w', encoding='UTF8') as f: # Create file
+            writer = csv.writer(f)
+            header = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps',
+                      loss_function]
+            writer.writerow(header)
+            writer.writerow(data_to_save)
+

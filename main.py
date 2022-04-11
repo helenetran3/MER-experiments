@@ -44,6 +44,10 @@ parser.add_argument('-mf', '--model_folder', type=str,
                     help="Name of the directory where the models will be saved.")
 parser.add_argument('-mn', '--model_name', type=str,
                     help="Name of the model to be saved.")
+parser.add_argument('-cf', '--csv_folder', type=str,
+                    help="Name of the directory where the csv file containing the results is saved.")
+parser.add_argument('-cn', '--csv_name', type=str,
+                    help="Name of the csv file.")
 parser.add_argument('-e', '--num_epochs', type=int,
                     help="Maximum number of epochs")
 parser.add_argument('-p', '--patience', type=int,
@@ -81,7 +85,7 @@ def main():
                           args.val_metric, args.patience, args.model_folder, args.model_name)
 
     evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.num_layers, args.num_nodes, args.dropout_rate,
-                   args.loss_function, args.model_folder, args.model_name)
+                   args.loss_function, args.model_folder, args.model_name, args.csv_folder, args.csv_name)
 
 
 if __name__ == "__main__":
