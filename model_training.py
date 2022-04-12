@@ -10,8 +10,9 @@ from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
-from sklearn.preprocessing import LabelEncoder, label_binarize
-from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, balanced_accuracy_score, recall_score
+from sklearn.preprocessing import LabelEncoder, label_binarize, MultiLabelBinarizer
+from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
+from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, recall_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
 
 
@@ -166,8 +167,43 @@ def train_model(train_list, valid_list, test_list,
     return history
 
 
+def get_class_from_presence_score(score_vec, with_neutral_class, only_dominant):
+    """
+    Get the dominant emotion class(es) for each test segment based on the presence scores of emotions.
+    Column indexes: 0:happy, 1:sad, 2:anger, 3:surprise, 4:disgust, 5:fear, (6:neutral)
+
+    :param score_vec: array of shape (test_size,7) containing the sentiment + the presence score of 6 emotions
+    :param with_neutral_class: whether we add a neutral class or not
+    :param only_dominant: only keep dominant classes (else keep any emotion present)
+    :return: Binary array of shape (test_size,7) if we add neutral class, else array of shape (test_size,6).
+    """
+
+    list_dominant_emotions = []
+    test_size = score_vec.shape[0]
+
+    for seg_id in range(test_size):  # we check every segment
+
+        seg_emotions = score_vec[seg_id, 1:]  # we removed the first value which corresponds to sentiment
+        max_score = max(seg_emotions)
+
+        if max_score == 0:  # neutral case
+            list_dominant_emotions.append([6]) if with_neutral_class else list_dominant_emotions.append([])
+
+        else:  # there is at least one emotion
+            if only_dominant:
+                # the following takes the index(es) of the maximum value in the presence score vector of emotions
+                list_dominant_emotions.append([i for i, val in enumerate(seg_emotions) if val == max_score])
+            else:
+                list_dominant_emotions.append([i for i, val in enumerate(seg_emotions) if val != 0])
+
+    mlb = MultiLabelBinarizer()
+    bin_array_dominant_emotions = mlb.fit_transform(list_dominant_emotions)
+
+    return bin_array_dominant_emotions
+
+
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
-                   model_folder, model_name, csv_folder, csv_name, round_decimals):
+                   model_folder, model_name, csv_folder, csv_name, predict_neutral_class, round_decimals):
     """
     Evaluate the performance of the best model.
 
@@ -185,15 +221,6 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param round_decimals: Number of decimals to be rounded for metrics.
     """
 
-    x_test = test_list[0]  # each element of shape (29, 409)
-    y_test = test_list[1]  # each element of shape (1, 7)
-    seg_test = test_list[2]
-
-    # Create TensorFlow test dataset for model evaluation
-    with_fixed_length = (fixed_num_steps > 0)
-    test_dataset = get_tf_dataset(x_test, y_test, seg_test, batch_size, with_fixed_length, fixed_num_steps,
-                                  train_mode=True)
-
     # Load best model
     parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate,
                                                         batch_size, fixed_num_steps)
@@ -201,33 +228,56 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
 
-    print("\n\n================================= Model Prediction ===========================================")
-
+    # Array names to save
     true_sc_save_name = "true_scores_{}.h5".format(parameters_name)
-    true_cl_save_name = "true_classes_{}.h5".format(parameters_name)
+    true_cl_dom_save_name = "true_classes_dom_{}.h5".format(parameters_name)
+    true_cl_all_save_name = "true_classes_all_{}.h5".format(parameters_name)
     pred_raw_save_name = "pred_raw_{}.h5".format(parameters_name)
     pred_sc_save_name = "pred_scores_{}.h5".format(parameters_name)
-    pred_cl_save_name = "pred_classes_{}.h5".format(parameters_name)
+    pred_cl_dom_save_name = "pred_classes_dom_{}.h5".format(parameters_name)
+    pred_cl_all_save_name = "pred_classes_all_{}.h5".format(parameters_name)
 
-    # Presence score derived from true labels
-    true_scores = np.array(y_test).flatten()  # shape (32578,) > each 7 emotions correspond to one segment
+    # Extract x, y and seg_ids for test set
+    x_test = test_list[0]  # each element of shape (29, 409)
+    y_test = test_list[1]  # each element of shape (1, 7)
+    seg_test = test_list[2]
+
+    # True presence scores
+    true_scores = np.reshape(np.array(y_test), (-1, 7))  # (4654, 7), possible values: 0, 0.33, 0.66, 1
     save_with_pickle(true_scores, true_sc_save_name, model_folder)
+    # True classes: binary arrays of shape (4654, 7)
+    true_classes_dom = get_class_from_presence_score(true_scores, predict_neutral_class, only_dominant=True)
+    true_classes_all = get_class_from_presence_score(true_scores, predict_neutral_class, only_dominant=False)
+    save_with_pickle(true_classes_dom, true_cl_dom_save_name, model_folder)
+    save_with_pickle(true_classes_all, true_cl_all_save_name, model_folder)
+    # print(true_classes_dom[:10, :])
+    # print(true_classes_all[:10, :])
+    # print(true_scores[:10, 1:])
 
-    # Get all existing presence scores with Label Encoder
-    le = LabelEncoder()
-    le.fit(true_scores)
-    classes = le.classes_
-    # Should give the following (23 classes):
-    # [-3.         -2.6666667  -2.3333333  -2.          -1.6666666  -1.3333334
-    #  -1.         -0.6666667  -0.5        -0.33333334  0.          0.16666667
-    #  0.33333334  0.5         0.6666667   0.8333333    1.          1.3333334
-    #  1.6666666   2.          2.3333333   2.6666667    3.        ]
+    # TODO Confusion matrix from that
 
-    # Classes derived from true labels (useful for metrics including confusion matrix)
-    true_classes = le.transform(true_scores)  # values from 0 to 22
-    save_with_pickle(true_classes, true_cl_save_name, model_folder)
+    # Create TensorFlow test dataset for model evaluation
+    with_fixed_length = (fixed_num_steps > 0)
+    test_dataset = get_tf_dataset(x_test, y_test, seg_test, batch_size, with_fixed_length, fixed_num_steps,
+                                  train_mode=False)
 
-    # Get raw predictions from the model
+    print("\n\n================================= Model Prediction ===========================================")
+
+    # # Get all existing presence scores with Label Encoder
+    # le = LabelEncoder()
+    # le.fit(true_scores)
+    # classes = le.classes_
+    # # Should give the following (23 classes):
+    # # [-3.         -2.6666667  -2.3333333  -2.          -1.6666666  -1.3333334
+    # #  -1.         -0.6666667  -0.5        -0.33333334  0.          0.16666667
+    # #  0.33333334  0.5         0.6666667   0.8333333    1.          1.3333334
+    # #  1.6666666   2.          2.3333333   2.6666667    3.        ]
+    #
+    # # Classes derived from true labels (useful for metrics including confusion matrix)
+    # true_classes = le.transform(true_scores)  # values from 0 to 22
+    # save_with_pickle(true_classes, true_cl_save_name, model_folder)
+
+    # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
         num_test_samples = len(y_test)
         pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)
@@ -236,58 +286,59 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     else:
         pred_raw = load_from_pickle(pred_raw_save_name, model_folder)
 
-    # Presence score derived from predictions
-    pred_scores = [min(classes, key=lambda x:abs(x-pred_raw[i])) for i in range(pred_raw.shape[0])]
-    pred_scores = np.array(pred_scores)  # pred_scores: get the closest class for each continuous value
+    # Presence score derived from predictions (the closest value among [0, 0.33, 0.66, 1] for each continuous value)
+    pred_scores = [min(list(range(7)), key=lambda x:abs(x-pred_raw[i])) for i in range(pred_raw.shape[0])]
+    pred_scores = np.reshape(np.array(pred_scores), (-1, 7))
     save_with_pickle(pred_scores, pred_sc_save_name, model_folder)
 
     # Classes derived from predictions (useful for metrics including confusion matrix)
-    pred_classes = le.transform(pred_scores)  # values from 0 to 22
-    save_with_pickle(pred_classes, pred_cl_save_name, model_folder)
+    pred_classes_dom = get_class_from_presence_score(pred_scores, predict_neutral_class, only_dominant=True)
+    pred_classes_all = get_class_from_presence_score(pred_scores, predict_neutral_class, only_dominant=False)
+    save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, model_folder)
+    save_with_pickle(pred_classes_all, pred_cl_all_save_name, model_folder)
 
-    # Confusion matrix
-    conf_matrix = confusion_matrix(true_classes, pred_classes)
-    save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
-
-    # Model evaluation and prediction
-    print("\n\n================================= Model Evaluation ===========================================")
-    loss_function_val = model.evaluate(test_dataset, verbose=1)
-    print("Loss function ({}): {}".format(loss_function, loss_function_val))
-    # Regression metrics
-    mae = round(mean_absolute_error(true_scores, pred_raw), round_decimals)
-    mse = round(mean_squared_error(true_scores, pred_raw), round_decimals)
-    print("Mean absolute error:", mae)
-    print("Mean squared error:", mse)
-    # Classification metrics
-    acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
-    acc_bal = round(balanced_accuracy_score(true_classes, pred_classes), round_decimals)
-    f1_each = f1_score(true_classes, pred_classes, average=None)
-    f1_macro = round(f1_score(true_classes, pred_classes, average='macro'), round_decimals)
-    f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    rec_each = recall_score(true_classes, pred_classes, average=None)
-    rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
-    rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    true_classes_bin = label_binarize(true_classes, classes=list(range(classes.shape[0])))
-    pred_classes_bin = label_binarize(pred_classes, classes=list(range(classes.shape[0])))
-    roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
-    roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
-                          round_decimals)
-    roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
-                             round_decimals)
-    print("Accuracy:", acc)
-    print("Balanced accuracy:", acc_bal)
-    print("F1 score (for each):", f1_each)
-    print("F1 score (unweighted mean):", f1_macro)
-    print("F1 score (weighted mean):", f1_weighted)
-    print("Recall (for each):", rec_each)
-    print("Recall (unweighted mean):", rec_macro)
-    print("Recall (weighted mean):", rec_weighted)
-    print("ROC AUC (for each):", roc_auc_each)
-    print("ROC AUC (unweighted mean):", roc_auc_macro)
-    print("ROC AUC (weighted mean):", roc_auc_weighted)
-
-    save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
-                             loss_function, loss_function_val, mae, mse, acc, acc_bal, f1_macro, f1_weighted,
-                             rec_macro, rec_weighted, roc_auc_macro, roc_auc_weighted)
-    # TODO: Add metrics for each class
-    
+    # # Confusion matrix
+    # conf_matrix = confusion_matrix(true_classes, pred_classes)
+    # save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
+    #
+    # # Model evaluation and prediction
+    # print("\n\n================================= Model Evaluation ===========================================")
+    # loss_function_val = model.evaluate(test_dataset, verbose=1)
+    # print("Loss function ({}): {}".format(loss_function, loss_function_val))
+    # # Regression metrics
+    # mae = round(mean_absolute_error(true_scores, pred_raw), round_decimals)
+    # mse = round(mean_squared_error(true_scores, pred_raw), round_decimals)
+    # print("Mean absolute error:", mae)
+    # print("Mean squared error:", mse)
+    # # Classification metrics
+    # acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
+    # acc_bal = round(balanced_accuracy_score(true_classes, pred_classes), round_decimals)
+    # f1_each = f1_score(true_classes, pred_classes, average=None)
+    # f1_macro = round(f1_score(true_classes, pred_classes, average='macro'), round_decimals)
+    # f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    # rec_each = recall_score(true_classes, pred_classes, average=None)
+    # rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
+    # rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    # true_classes_bin = label_binarize(true_classes, classes=list(range(classes.shape[0])))
+    # pred_classes_bin = label_binarize(pred_classes, classes=list(range(classes.shape[0])))
+    # roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
+    # roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
+    #                       round_decimals)
+    # roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
+    #                          round_decimals)
+    # print("Accuracy:", acc)
+    # print("Balanced accuracy:", acc_bal)
+    # print("F1 score (for each):", f1_each)
+    # print("F1 score (unweighted mean):", f1_macro)
+    # print("F1 score (weighted mean):", f1_weighted)
+    # print("Recall (for each):", rec_each)
+    # print("Recall (unweighted mean):", rec_macro)
+    # print("Recall (weighted mean):", rec_weighted)
+    # print("ROC AUC (for each):", roc_auc_each)
+    # print("ROC AUC (unweighted mean):", roc_auc_macro)
+    # print("ROC AUC (weighted mean):", roc_auc_weighted)
+    #
+    # save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+    #                          loss_function, loss_function_val, mae, mse, acc, acc_bal, f1_macro, f1_weighted,
+    #                          rec_macro, rec_weighted, roc_auc_macro, roc_auc_weighted)
+    # # TODO: Add metrics for each class

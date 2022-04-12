@@ -51,6 +51,8 @@ parser.add_argument('-lr', '--learning_rate', type=float,
                     help="Learning rate")
 parser.add_argument('-lf', '--loss_function', type=str,
                     help="Loss function")
+parser.add_argument('-nc', '--predict_neutral_class', action='store_true',
+                    help="Predict neutral class.")
 parser.add_argument('-rd', '--round_decimals', type=int,
                     help="Number of decimals to be rounded for metrics.")
 args = parser.parse_args()
@@ -83,7 +85,7 @@ def main():
 
     evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.num_layers, args.num_nodes, args.dropout_rate,
                    args.loss_function, args.model_folder, args.model_name, args.csv_folder, args.csv_name,
-                   args.round_decimals)
+                   args.predict_neutral_class, args.round_decimals)
 
 
 if __name__ == "__main__":

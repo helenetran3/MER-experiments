@@ -27,16 +27,14 @@ Recognition.
   Source: http://multicomp.cs.cmu.edu/resources/cmu-mosei-dataset/
   </p>
 
+### General description
+
 - Modalities: Audio, Video, Text (transcript)
 - Emotions: Anger, Disgust, Fear, Happiness, Sadness, Surprise + Neutral
 - 23 453 YouTube videos covering 250 topics
 - 1000 speakers facing the camera
 - Speech language: English
 - Wild emotions
-
-The authors provide a SDK that can be found here: [CMU-Multimodal SDK](https://github.com/A2Zadeh/CMU-MultimodalSDK).
-The handcrafted features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), **COVAREP** (audio), 
-**glove_vectors** (text).
 
 ```commandline
 @inproceedings{Zadeh2018,
@@ -47,6 +45,16 @@ The handcrafted features provided by the SDK are **OpenFace 2** (image), **FACET
   year={2018}
 }
 ```
+
+### SDK for data retrieval
+
+The authors provide an SDK that can be found here: [CMU-Multimodal SDK](https://github.com/A2Zadeh/CMU-MultimodalSDK). 
+
+Some useful details on the [CMU-Multimodal SDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) used to retrieve CMU-MOSEI data:
+- The handcrafted features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), **COVAREP** (audio), 
+**glove_vectors** (text).
+- The labels provided for each segment are: **[sentiment, happy, sad, anger, surprise, disgust, fear]** in this order
+with sentiment in range [-3,3] and emotions in range [0,3]. We only focus on emotions in this repository.
 
 ## Environment
 - Python 3.9.7
