@@ -10,7 +10,7 @@ from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, label_binarize
 from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, balanced_accuracy_score, recall_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
 
@@ -261,28 +261,33 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Classification metrics
     acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
     acc_bal = round(balanced_accuracy_score(true_classes, pred_classes), round_decimals)
-    f1_micro = round(f1_score(true_classes, pred_classes, average='micro'), round_decimals)
+    f1_each = f1_score(true_classes, pred_classes, average=None)
     f1_macro = round(f1_score(true_classes, pred_classes, average='macro'), round_decimals)
     f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    rec_micro = round(recall_score(true_classes, pred_classes, average='micro'), round_decimals)
+    rec_each = recall_score(true_classes, pred_classes, average=None)
     rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
     rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    # roc_auc_macro = round(roc_auc_score(true_classes, pred_classes, average='macro', multi_class='ovr'), round_decimals)
-    # roc_auc_weighted = round(roc_auc_score(true_classes, pred_classes, average='weighted', multi_class='ovr'), round_decimals)
+    true_classes_bin = label_binarize(true_classes, classes=list(range(classes.shape[0])))
+    pred_classes_bin = label_binarize(pred_classes, classes=list(range(classes.shape[0])))
+    roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
+    roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
+                          round_decimals)
+    roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
+                             round_decimals)
     print("Accuracy:", acc)
     print("Balanced accuracy:", acc_bal)
-    print("F1 score (all classes together):", f1_micro)
-    print("F1 score (F1 score for each + unweighted mean):", f1_macro)
-    print("F1 score (F1 score for each + weighted mean):", f1_weighted)
-    print("Recall (all classes together):", rec_micro)
-    print("Recall (recall for each + unweighted mean):", rec_macro)
-    print("Recall (recall for each + weighted mean):", rec_weighted)
-    # print("ROC AUC (score for each + unweighted mean):", roc_auc_macro)
-    # print("ROC AUC (score for each + weighted mean):", roc_auc_weighted)
+    print("F1 score (for each):", f1_each)
+    print("F1 score (unweighted mean):", f1_macro)
+    print("F1 score (weighted mean):", f1_weighted)
+    print("Recall (for each):", rec_each)
+    print("Recall (unweighted mean):", rec_macro)
+    print("Recall (weighted mean):", rec_weighted)
+    print("ROC AUC (for each):", roc_auc_each)
+    print("ROC AUC (unweighted mean):", roc_auc_macro)
+    print("ROC AUC (weighted mean):", roc_auc_weighted)
 
     save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
-                             loss_function, loss_function_val, mae, mse,
-                             acc, acc_bal, f1_micro, f1_macro, f1_weighted, rec_micro, rec_macro, rec_weighted)
-                             # roc_auc_macro, roc_auc_weighted)
-
-
+                             loss_function, loss_function_val, mae, mse, acc, acc_bal, f1_macro, f1_weighted,
+                             rec_macro, rec_weighted, roc_auc_macro, roc_auc_weighted)
+    # TODO: Add metrics for each class
+    
