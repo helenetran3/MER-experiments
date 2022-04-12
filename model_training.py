@@ -196,7 +196,8 @@ def get_class_from_presence_score(score_vec, with_neutral_class, only_dominant):
             else:
                 list_dominant_emotions.append([i for i, val in enumerate(seg_emotions) if val != 0])
 
-    mlb = MultiLabelBinarizer()
+    num_classes = 7 if with_neutral_class else 6
+    mlb = MultiLabelBinarizer(classes=list(range(num_classes)))
     bin_array_dominant_emotions = mlb.fit_transform(list_dominant_emotions)
 
     return bin_array_dominant_emotions
@@ -263,20 +264,6 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     print("\n\n================================= Model Prediction ===========================================")
 
-    # # Get all existing presence scores with Label Encoder
-    # le = LabelEncoder()
-    # le.fit(true_scores)
-    # classes = le.classes_
-    # # Should give the following (23 classes):
-    # # [-3.         -2.6666667  -2.3333333  -2.          -1.6666666  -1.3333334
-    # #  -1.         -0.6666667  -0.5        -0.33333334  0.          0.16666667
-    # #  0.33333334  0.5         0.6666667   0.8333333    1.          1.3333334
-    # #  1.6666666   2.          2.3333333   2.6666667    3.        ]
-    #
-    # # Classes derived from true labels (useful for metrics including confusion matrix)
-    # true_classes = le.transform(true_scores)  # values from 0 to 22
-    # save_with_pickle(true_classes, true_cl_save_name, model_folder)
-
     # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
         num_test_samples = len(y_test)
@@ -286,8 +273,15 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     else:
         pred_raw = load_from_pickle(pred_raw_save_name, model_folder)
 
+    # pred_raw[1] = 2.1  # For debugging
+    # pred_raw[2] = 1.5
+
+    # Get all existing presence scores with Label Encoder
+    le = LabelEncoder()
+    le.fit(true_scores[:, 1:].flatten())
+    classes = le.classes_
     # Presence score derived from predictions (the closest value among [0, 0.33, 0.66, 1] for each continuous value)
-    pred_scores = [min(list(range(7)), key=lambda x:abs(x-pred_raw[i])) for i in range(pred_raw.shape[0])]
+    pred_scores = [min(list(classes), key=lambda x:abs(x-pred_raw[i])) for i in range(pred_raw.shape[0])]
     pred_scores = np.reshape(np.array(pred_scores), (-1, 7))
     save_with_pickle(pred_scores, pred_sc_save_name, model_folder)
 
@@ -296,11 +290,18 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     pred_classes_all = get_class_from_presence_score(pred_scores, predict_neutral_class, only_dominant=False)
     save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, model_folder)
     save_with_pickle(pred_classes_all, pred_cl_all_save_name, model_folder)
+    pred_raw = np.reshape(np.array(pred_raw), (-1, 7))
+    # print(pred_raw[1,1])  # For debugging
+    # print(pred_raw[:10, 1:])
+    # print(pred_scores[:10, 1:])
+    # print(pred_classes_all[:10, :])
 
-    # # Confusion matrix
-    # conf_matrix = confusion_matrix(true_classes, pred_classes)
-    # save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
-    #
+    # Confusion matrix (binary classification: whether an emotion is present or not)
+    num_classes = true_classes_all.shape[1]
+    conf_matrix = multilabel_confusion_matrix(true_classes_all, pred_classes_all, labels=list(range(num_classes)))
+    save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
+    # print("conf_matrix.shape", conf_matrix.shape)
+
     # # Model evaluation and prediction
     # print("\n\n================================= Model Evaluation ===========================================")
     # loss_function_val = model.evaluate(test_dataset, verbose=1)
