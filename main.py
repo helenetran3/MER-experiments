@@ -3,12 +3,7 @@ from dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset
 from model_training import train_model, evaluate_model
 import argparse
 
-parser = argparse.ArgumentParser(description="Emotion Recognition using CMU-MOSEI database. "
-                                             "Related paper: "
-                                             "Williams, J., Kleinegesse, S., Comanescu, R., & Radu, O. (2018, July). "
-                                             "Recognizing Emotions in Video Using Multimodal DNN Feature Fusion. In "
-                                             "Proceedings of Grand Challenge and Workshop on Human Multimodal "
-                                             "Language (Challenge-HML) (pp. 11-19).")
+parser = argparse.ArgumentParser(description="SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.")
 parser.add_argument('-df', '--dataset_folder', type=str,
                     help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded.")
 parser.add_argument('-pnd', '--pickle_name_dataset', type=str,
