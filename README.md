@@ -10,6 +10,7 @@ Feel free to open an issue on this repository if you have any question or remark
 1. [CMU-MOSEI Database](#CMU-MOSEI-Database)
 2. [Environment](#Environment)
 3. [How to run the code](#How-to-run-the-code)
+4. [Models available](#models-available)
 
 ## CMU-MOSEI Database
 
