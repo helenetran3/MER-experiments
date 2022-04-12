@@ -22,10 +22,8 @@ Recognition.
 
   </p>
 
-  <p font="italic" align="center">  
-
-  *Source: [CMU-MOSEI website](http://multicomp.cs.cmu.edu/resources/cmu-mosei-dataset/)*
-
+  <p font="italic" align="center">
+  Source: http://multicomp.cs.cmu.edu/resources/cmu-mosei-dataset/
   </p>
 
 - Modalities: Audio, Video, Text (transcript)
@@ -35,12 +33,9 @@ Recognition.
 - Speech language: English
 - Wild emotions
 
-The authors provide a SDK that can be found here: [CMU-Multimodal SDK](https://github.com/A2Zadeh/CMU-MultimodalSDK)
-
+The authors provide a SDK that can be found here: [CMU-Multimodal SDK](https://github.com/A2Zadeh/CMU-MultimodalSDK).
 The handcrafted features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), **COVAREP** (audio), 
 **glove_vectors** (text).
-
-Paper: [Multimodal Language Analysis in the Wild: CMU-MOSEI Dataset and Interpretable Dynamic Fusion Graph](https://par.nsf.gov/servlets/purl/10081555) 
 
 ```commandline
 @inproceedings{Zadeh2018,
