@@ -1,6 +1,7 @@
 from pickle_functions import pickle_file_exists, load_from_pickle
 from dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset
-from model_training import train_model, evaluate_model
+from model_training import train_model
+from model_evaluation import evaluate_model
 import argparse
 
 parser = argparse.ArgumentParser(description="SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.")
