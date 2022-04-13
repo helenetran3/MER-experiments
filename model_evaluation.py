@@ -70,6 +70,56 @@ def get_class_from_presence_score(score_array, with_neutral_class, only_dominant
         return bin_array_emotions
 
 
+def get_classification_metrics(true_classes, pred_classes, num_classes, round_decimals):
+    """
+    Compute classification metrics.
+     Accuracy, balanced accuracy
+     F1 for each emotion, unweighted and weighted F1
+     Recall for each emotion, unweighted and weighted recall
+     ROC AUC for each emotion, unweighted and weighted ROC AUC
+    :param true_classes: binary array of true classes, shape (test_size, num_classes) (num_classes = 7 if with neutral class, else 6)
+    :param pred_classes: binary array of predictions, shape (test_size, num_classes) (num_classes = 7 if with neutral class, else 6)
+    :param num_classes: number of classes (7 with neutral class, else 6)
+    :param round_decimals: number of decimals to be rounded for metrics
+    :return:
+    """
+
+    acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
+    f1_each = f1_score(true_classes, pred_classes, average=None)
+    f1_macro = round(f1_score(true_classes, pred_classes, average='macro'), round_decimals)
+    f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    rec_each = recall_score(true_classes, pred_classes, average=None)
+    rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
+    rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    true_classes_bin = label_binarize(true_classes, classes=list(range(num_classes)))
+    pred_classes_bin = label_binarize(pred_classes, classes=list(range(num_classes)))
+    roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
+    roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
+                          round_decimals)
+    roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
+                             round_decimals)
+
+    f1_each_rounded = [round(val, round_decimals) for val in f1_each]
+    rec_each_rounded = [round(val, round_decimals) for val in rec_each]
+    roc_auc_each_rounded = [round(val, round_decimals) for val in roc_auc_each]
+
+    print("Multilabel Accuracy:", acc)
+    print("F1 score (for each):", f1_each_rounded)
+    print("F1 score (unweighted mean):", f1_macro)
+    print("F1 score (weighted mean):", f1_weighted)
+    print("Recall (for each):", rec_each_rounded)
+    print("Recall (unweighted mean):", rec_macro)
+    print("Recall (weighted mean):", rec_weighted)
+    print("ROC AUC (for each):", roc_auc_each_rounded)
+    print("ROC AUC (unweighted mean):", roc_auc_macro)
+    print("ROC AUC (weighted mean):", roc_auc_weighted)
+
+    res = [acc, f1_macro, f1_weighted, rec_macro, rec_weighted, roc_auc_macro, roc_auc_weighted]
+    res = res + f1_each_rounded + rec_each_rounded + roc_auc_each_rounded
+
+    return res
+
+
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
                    model_folder, model_name, csv_folder, csv_name, predict_neutral_class, round_decimals):
     """
@@ -90,52 +140,52 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     """
 
     # Load best model
-    parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate,
-                                                        batch_size, fixed_num_steps)
+    parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
     model_save_name = "{}_{}.h5".format(model_name, parameters_name)
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
 
-    # Array names to save
+    # Array names of pickle objects to save
     true_sc_save_name = "true_scores_{}.h5".format(parameters_name)
     true_sc_coa_save_name = "true_scores_coarse_{}.h5".format(parameters_name)
+    true_cl_pres_save_name = "true_classes_pres_{}.h5".format(parameters_name)
     true_cl_dom_save_name = "true_classes_dom_{}.h5".format(parameters_name)
-    true_cl_save_name = "true_classes_{}.h5".format(parameters_name)
     pred_raw_save_name = "pred_raw_{}.h5".format(parameters_name)
     pred_sc_save_name = "pred_scores_{}.h5".format(parameters_name)
     pred_sc_coa_save_name = "pred_scores_coarse_{}.h5".format(parameters_name)
+    pred_cl_pres_save_name = "pred_classes_pres_{}.h5".format(parameters_name)
     pred_cl_dom_save_name = "pred_classes_dom_{}.h5".format(parameters_name)
-    pred_cl_save_name = "pred_classes_{}.h5".format(parameters_name)
 
     # Extract x, y and seg_ids for test set
     x_test = test_list[0]  # each element of shape (29, 409)
     y_test = test_list[1]  # each element of shape (1, 7)
     seg_test = test_list[2]
 
-    # True presence scores: arrays of shape (4654, 7)
-    # Default presence scores: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
-    # Coarse-grained presence scores: [0, 1, 2, 3]
+    # Compute true presence scores: arrays of shape (4654, 7)
+    # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
+    # Coarse-grained values: [0, 1, 2, 3]
     # TODO remove sentiment prediction from model training and evaluation, and change the code consequently
     true_scores = np.reshape(np.array(y_test), (-1, 7))
     true_scores = true_scores[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
     true_scores_coarse = get_presence_score_from_finer_grained_val(true_scores, true_scores, coarse=True)
     save_with_pickle(true_scores, true_sc_save_name, model_folder)
     save_with_pickle(true_scores_coarse, true_sc_coa_save_name, model_folder)
-    # True classes: binary arrays of shape (4654, 7)
-    true_classes = get_class_from_presence_score(true_scores, predict_neutral_class)
+
+    # Compute true classes: binary arrays of shape (4654, 7)
+    true_classes_pres = get_class_from_presence_score(true_scores, predict_neutral_class)
     true_classes_dom = get_class_from_presence_score(true_scores, predict_neutral_class, only_dominant=True)
-    save_with_pickle(true_classes, true_cl_save_name, model_folder)
+    save_with_pickle(true_classes_pres, true_cl_pres_save_name, model_folder)
     save_with_pickle(true_classes_dom, true_cl_dom_save_name, model_folder)
     # print("true_scores[:10, 1:]:\n", true_scores[:10, 1:])
-    # print("true_classes[:10, :]:\n", true_classes[:10, :])
+    # print("true_classes_pres[:10, :]:\n", true_classes_pres[:10, :])
     # print("true_classes_dom[:10, :]:\n", true_classes_dom[:10, :])
+
+    print("\n\n================================= Model Prediction ===========================================")
 
     # Create TensorFlow test dataset for model evaluation
     with_fixed_length = (fixed_num_steps > 0)
     test_dataset = get_tf_dataset(x_test, y_test, seg_test, batch_size, with_fixed_length, fixed_num_steps,
                                   train_mode=False)
-
-    print("\n\n================================= Model Prediction ===========================================")
 
     # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
@@ -145,33 +195,34 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     else:
         pred_raw = load_from_pickle(pred_raw_save_name, model_folder)
 
-    # Get all existing presence scores from predictions
+    # Get presence scores from raw predictions
     pred_raw_emo = pred_raw[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
     pred_scores = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores)
     pred_scores_coa = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores, coarse=True)
     save_with_pickle(pred_scores, pred_sc_save_name, model_folder)
     save_with_pickle(pred_scores_coa, pred_sc_coa_save_name, model_folder)
 
-    # Classes derived from predictions (useful for classification metrics including confusion matrix)
-    pred_classes = get_class_from_presence_score(pred_scores, predict_neutral_class)
+    # Compute predicted classes from presence scores (useful for classification metrics including confusion matrix)
+    pred_classes_pres = get_class_from_presence_score(pred_scores, predict_neutral_class)
     pred_classes_dom = get_class_from_presence_score(pred_scores, predict_neutral_class, only_dominant=True)
-    save_with_pickle(pred_classes, pred_cl_save_name, model_folder)
+    save_with_pickle(pred_classes_pres, pred_cl_pres_save_name, model_folder)
     save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, model_folder)
     # print("pred_raw_emo[:10, 1:]:\n", pred_raw_emo[:10, 1:])  # For debugging
     # print("pred_scores[:10, :]:\n", pred_scores[:10, :])
     # print("pred_scores_coa[:10, :]:\n", pred_scores_coa[:10, :])
-    # print("pred_classes[:10, :]:\n", pred_classes[:10, :])
+    # print("pred_classes_pres[:10, :]:\n", pred_classes_pres[:10, :])
     # print("pred_classes_dom[:10, :]:\n", pred_classes_dom[:10, :])
 
     # Confusion matrix (binary classification: whether an emotion is present or not)
-    num_classes = true_classes.shape[1]
-    conf_matrix = multilabel_confusion_matrix(true_classes, pred_classes, labels=list(range(num_classes)))
+    num_classes = true_classes_pres.shape[1]
+    conf_matrix = multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, labels=list(range(num_classes)))
     save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
 
-    # Model evaluation and prediction
     print("\n\n================================= Model Evaluation ===========================================")
+
     loss_function_val = model.evaluate(test_dataset, verbose=1)
     print("Loss function ({}): {}".format(loss_function, loss_function_val))
+
     # Regression metrics
     mae = round(mean_absolute_error(true_scores, pred_raw_emo), round_decimals)
     mse = round(mean_squared_error(true_scores, pred_raw_emo), round_decimals)
@@ -181,34 +232,11 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     ## TODO Quatre cas: les scores de présence par défaut, 4 scores de présence, présence ou absence d'une émotion et
     ## TODO             classification de le ou les émotions dominantes -> utile pour l'ambiguité
     # Classification metrics
-    # acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
-    # acc_bal = round(balanced_accuracy_score(true_classes, pred_classes), round_decimals)
-    # f1_each = f1_score(true_classes, pred_classes, average=None)
-    # f1_macro = round(f1_score(true_classes, pred_classes, average='macro'), round_decimals)
-    # f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    # rec_each = recall_score(true_classes, pred_classes, average=None)
-    # rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
-    # rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    # true_classes_bin = label_binarize(true_classes, classes=list(range(classes.shape[0])))
-    # pred_classes_bin = label_binarize(pred_classes, classes=list(range(classes.shape[0])))
-    # roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
-    # roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
-    #                       round_decimals)
-    # roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
-    #                          round_decimals)
-    # print("Accuracy:", acc)
-    # print("Balanced accuracy:", acc_bal)
-    # print("F1 score (for each):", f1_each)
-    # print("F1 score (unweighted mean):", f1_macro)
-    # print("F1 score (weighted mean):", f1_weighted)
-    # print("Recall (for each):", rec_each)
-    # print("Recall (unweighted mean):", rec_macro)
-    # print("Recall (weighted mean):", rec_weighted)
-    # print("ROC AUC (for each):", roc_auc_each)
-    # print("ROC AUC (unweighted mean):", roc_auc_macro)
-    # print("ROC AUC (weighted mean):", roc_auc_weighted)
-    #
-    # save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
-    #                          loss_function, loss_function_val, mae, mse, acc, acc_bal, f1_macro, f1_weighted,
-    #                          rec_macro, rec_weighted, roc_auc_macro, roc_auc_weighted)
-    # # TODO: Add metrics for each class
+    print("\n----- presence -----")
+    metrics_presence = get_classification_metrics(true_classes_pres, pred_classes_pres, num_classes, round_decimals)
+    print("\n----- dominant -----")
+    metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
+
+    save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+                             loss_function, loss_function_val, mae, mse, metrics_presence, metrics_dominant,
+                             predict_neutral_class)
