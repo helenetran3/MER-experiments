@@ -167,40 +167,62 @@ def train_model(train_list, valid_list, test_list,
     return history
 
 
-def get_class_from_presence_score(score_vec, with_neutral_class, only_dominant):
+def get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores, coarse=False):
+    """
+
+    :param pred_raw_emo: array of shape (test_size, 6) predicting the 6 emotions
+    :param true_scores: array of shape (test_size, 7) giving the true sentiment and the 6 emotions
+    :param coarse: if True, the resulting presence scores in [0, 1, 2, 3].
+                   Default: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
+    :return: array of shape (test_size, 6) giving the presence score of all the 6 emotions
+    """
+    le = LabelEncoder()
+    le.fit(true_scores[:, 1:].flatten())
+    classes = le.classes_ if not coarse else [0, 1, 2, 3]
+    pred_raw_emo = pred_raw_emo.flatten()
+    pred_scores = [min(list(classes), key=lambda x: abs(x - pred_raw_emo[i])) for i in range(pred_raw_emo.shape[0])]
+    pred_scores = np.reshape(np.array(pred_scores), (-1, 6))
+    return pred_scores
+
+
+def get_class_from_presence_score(score_array, with_neutral_class, only_dominant=False):
     """
     Get the dominant emotion class(es) for each test segment based on the presence scores of emotions.
     Column indexes: 0:happy, 1:sad, 2:anger, 3:surprise, 4:disgust, 5:fear, (6:neutral)
 
-    :param score_vec: array of shape (test_size,7) containing the sentiment + the presence score of 6 emotions
+    :param score_array: array of shape (test_size,6) containing the presence score of 6 emotions
     :param with_neutral_class: whether we add a neutral class or not
-    :param only_dominant: only keep dominant classes (else keep any emotion present)
+    :param only_dominant: if True, only keep dominant classes (else keep any emotion present)
     :return: Binary array of shape (test_size,7) if we add neutral class, else array of shape (test_size,6).
     """
 
-    list_dominant_emotions = []
-    test_size = score_vec.shape[0]
-
-    for seg_id in range(test_size):  # we check every segment
-
-        seg_emotions = score_vec[seg_id, 1:]  # we removed the first value which corresponds to sentiment
-        max_score = max(seg_emotions)
-
-        if max_score == 0:  # neutral case
-            list_dominant_emotions.append([6]) if with_neutral_class else list_dominant_emotions.append([])
-
-        else:  # there is at least one emotion
-            if only_dominant:
-                # the following takes the index(es) of the maximum value in the presence score vector of emotions
-                list_dominant_emotions.append([i for i, val in enumerate(seg_emotions) if val == max_score])
-            else:
-                list_dominant_emotions.append([i for i, val in enumerate(seg_emotions) if val != 0])
-
-    num_classes = 7 if with_neutral_class else 6
-    mlb = MultiLabelBinarizer(classes=list(range(num_classes)))
-    bin_array_dominant_emotions = mlb.fit_transform(list_dominant_emotions)
-
-    return bin_array_dominant_emotions
+    list_emotions = []
+    test_size = score_array.shape[0]
+    
+    if score_array.shape[1] != 6:
+        print("Make sure that the array of presence scores have 6 columns (for the 6 emotions).")
+        
+    else:
+        for seg_id in range(test_size):  # we check every segment
+    
+            score_seg = score_array[seg_id, :]
+            max_score = max(score_seg)
+    
+            if max_score == 0:  # neutral case
+                list_emotions.append([6]) if with_neutral_class else list_emotions.append([])
+    
+            else:  # there is at least one emotion
+                if only_dominant:
+                    # the following takes the index(es) of the maximum value in the presence score vector of emotions
+                    list_emotions.append([i for i, val in enumerate(score_seg) if val == max_score])
+                else:
+                    list_emotions.append([i for i, val in enumerate(score_seg) if val != 0])
+    
+        num_classes = 7 if with_neutral_class else 6
+        mlb = MultiLabelBinarizer(classes=list(range(num_classes)))
+        bin_array_emotions = mlb.fit_transform(list_emotions)
+    
+        return bin_array_emotions
 
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
@@ -231,10 +253,12 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     # Array names to save
     true_sc_save_name = "true_scores_{}.h5".format(parameters_name)
+    true_sc_coa_save_name = "true_scores_coarse_{}.h5".format(parameters_name)
     true_cl_dom_save_name = "true_classes_dom_{}.h5".format(parameters_name)
     true_cl_all_save_name = "true_classes_all_{}.h5".format(parameters_name)
     pred_raw_save_name = "pred_raw_{}.h5".format(parameters_name)
     pred_sc_save_name = "pred_scores_{}.h5".format(parameters_name)
+    pred_sc_coa_save_name = "pred_scores_coarse_{}.h5".format(parameters_name)
     pred_cl_dom_save_name = "pred_classes_dom_{}.h5".format(parameters_name)
     pred_cl_all_save_name = "pred_classes_all_{}.h5".format(parameters_name)
 
@@ -243,19 +267,23 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     y_test = test_list[1]  # each element of shape (1, 7)
     seg_test = test_list[2]
 
-    # True presence scores
-    true_scores = np.reshape(np.array(y_test), (-1, 7))  # (4654, 7), possible values: 0, 0.33, 0.66, 1
+    # True presence scores: arrays of shape (4654, 7)
+    # Default presence scores: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
+    # Coarse-grained presence scores: [0, 1, 2, 3]
+    # TODO remove sentiment prediction from model training and evaluation, and change the code consequently
+    true_scores = np.reshape(np.array(y_test), (-1, 7))
+    true_scores = true_scores[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
+    true_scores_coarse = get_presence_score_from_finer_grained_val(true_scores, true_scores, coarse=True)
     save_with_pickle(true_scores, true_sc_save_name, model_folder)
+    save_with_pickle(true_scores_coarse, true_sc_coa_save_name, model_folder)
     # True classes: binary arrays of shape (4654, 7)
+    true_classes_all = get_class_from_presence_score(true_scores, predict_neutral_class)
     true_classes_dom = get_class_from_presence_score(true_scores, predict_neutral_class, only_dominant=True)
-    true_classes_all = get_class_from_presence_score(true_scores, predict_neutral_class, only_dominant=False)
-    save_with_pickle(true_classes_dom, true_cl_dom_save_name, model_folder)
     save_with_pickle(true_classes_all, true_cl_all_save_name, model_folder)
-    # print(true_classes_dom[:10, :])
-    # print(true_classes_all[:10, :])
-    # print(true_scores[:10, 1:])
-
-    # TODO Confusion matrix from that
+    save_with_pickle(true_classes_dom, true_cl_dom_save_name, model_folder)
+    # print("true_scores[:10, 1:]:\n", true_scores[:10, 1:])
+    # print("true_classes_dom[:10, :]:\n", true_classes_dom[:10, :])
+    # print("true_classes_all[:10, :]:\n", true_classes_all[:10, :])
 
     # Create TensorFlow test dataset for model evaluation
     with_fixed_length = (fixed_num_steps > 0)
@@ -267,48 +295,40 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
         num_test_samples = len(y_test)
-        pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)
-        pred_raw = pred_raw.flatten()  # (32578,)
+        pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)  # (4654, 7)
         save_with_pickle(pred_raw, pred_raw_save_name, model_folder)
     else:
         pred_raw = load_from_pickle(pred_raw_save_name, model_folder)
 
-    # pred_raw[1] = 2.1  # For debugging
-    # pred_raw[2] = 1.5
-
-    # Get all existing presence scores with Label Encoder
-    le = LabelEncoder()
-    le.fit(true_scores[:, 1:].flatten())
-    classes = le.classes_
-    # Presence score derived from predictions (the closest value among [0, 0.33, 0.66, 1] for each continuous value)
-    pred_scores = [min(list(classes), key=lambda x:abs(x-pred_raw[i])) for i in range(pred_raw.shape[0])]
-    pred_scores = np.reshape(np.array(pred_scores), (-1, 7))
+    # Get all existing presence scores from predictions
+    pred_raw_emo = pred_raw[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
+    pred_scores = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores)
+    pred_scores_coarse = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores, coarse=True)
     save_with_pickle(pred_scores, pred_sc_save_name, model_folder)
+    save_with_pickle(pred_scores_coarse, pred_sc_coa_save_name, model_folder)
 
-    # Classes derived from predictions (useful for metrics including confusion matrix)
+    # Classes derived from predictions (useful for classification metrics including confusion matrix)
+    pred_classes_all = get_class_from_presence_score(pred_scores, predict_neutral_class)
     pred_classes_dom = get_class_from_presence_score(pred_scores, predict_neutral_class, only_dominant=True)
-    pred_classes_all = get_class_from_presence_score(pred_scores, predict_neutral_class, only_dominant=False)
-    save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, model_folder)
     save_with_pickle(pred_classes_all, pred_cl_all_save_name, model_folder)
-    pred_raw = np.reshape(np.array(pred_raw), (-1, 7))
-    # print(pred_raw[1,1])  # For debugging
-    # print(pred_raw[:10, 1:])
-    # print(pred_scores[:10, 1:])
-    # print(pred_classes_all[:10, :])
+    save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, model_folder)
+    # print("pred_raw_emo[0,1]:\n", pred_raw_emo[0, 1])  # For debugging
+    # print("pred_raw_emo[:10, 1:]:\n", pred_raw_emo[:10, 1:])
+    # print("pred_scores[:10, 1:]:\n", pred_scores[:10, 1:])
+    # print("pred_classes_all[:10, :]:\n", pred_classes_all[:10, :])
 
     # Confusion matrix (binary classification: whether an emotion is present or not)
     num_classes = true_classes_all.shape[1]
     conf_matrix = multilabel_confusion_matrix(true_classes_all, pred_classes_all, labels=list(range(num_classes)))
     save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
-    # print("conf_matrix.shape", conf_matrix.shape)
 
     # # Model evaluation and prediction
     # print("\n\n================================= Model Evaluation ===========================================")
     # loss_function_val = model.evaluate(test_dataset, verbose=1)
     # print("Loss function ({}): {}".format(loss_function, loss_function_val))
     # # Regression metrics
-    # mae = round(mean_absolute_error(true_scores, pred_raw), round_decimals)
-    # mse = round(mean_squared_error(true_scores, pred_raw), round_decimals)
+    # mae = round(mean_absolute_error(true_scores, pred_raw_emo), round_decimals)
+    # mse = round(mean_squared_error(true_scores, pred_raw_emo), round_decimals)
     # print("Mean absolute error:", mae)
     # print("Mean squared error:", mse)
     # # Classification metrics
