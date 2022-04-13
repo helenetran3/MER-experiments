@@ -136,7 +136,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param model_name: Name of the saved model
     :param csv_folder: Name of the directory where the csv file containing the results is saved
     :param csv_name: Name of the csv file
-    :param round_decimals: Number of decimals to be rounded for metrics.
+    :param predict_neutral_class: Whether we predict the neutral class
+    :param round_decimals: Number of decimals to be rounded for metrics
     """
 
     # Load best model
