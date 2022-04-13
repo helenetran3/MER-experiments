@@ -1,4 +1,4 @@
-# Multimodal Emotion Recognition SOTA models
+# SOTA models for Multimodal Emotion Recognition
 
 :dart: This repository is intended to experiment state-of-the-art codes on Multimodal Emotion Recognition.
 
@@ -53,8 +53,8 @@ The authors provide an SDK that can be found here: [CMU-Multimodal SDK](https://
 Some useful details on the [CMU-Multimodal SDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) used to retrieve CMU-MOSEI data:
 - The handcrafted features provided by the SDK are **OpenFace 2** (image), **FACET 4.2** (image), **COVAREP** (audio), 
 **glove_vectors** (text).
-- The labels provided for each segment are: **[sentiment, happy, sad, anger, surprise, disgust, fear]** in this order
-with sentiment in range [-3,3] and emotions in range [0,3]. We only focus on emotions in this repository.
+- The labels provided for each segment are: **[sentiment, happy, sad, anger, surprise, disgust, fear]** in this order,
+with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repository, we only focus on emotions.
 
 ## Environment
 - Python 3.9.7
@@ -93,17 +93,17 @@ with sentiment in range [-3,3] and emotions in range [0,3]. We only focus on emo
         -pnd PICKLE_NAME_DATASET, --pickle_name_dataset PICKLE_NAME_DATASET
                               Name of the pickle object that will contain the CMU-MOSEI mmdataset.
         -pnf PICKLE_NAME_FOLD, --pickle_name_fold PICKLE_NAME_FOLD
-                              Name of the pickle object that will contain the training, validation and test
-                              folds.
+                              Name of the pickle object that will contain the training, validation 
+                              and test folds.
         -pf PICKLE_FOLDER, --pickle_folder PICKLE_FOLDER
-                              Name of the folder where to save the pickle object that contain the CMU-MOSEI
-                              mmdataset.
+                              Name of the folder where to save the pickle object that contain the 
+                              CMU-MOSEI mmdataset.
         -t, --align_to_text   Data will be aligned to the textual modality.
         -al, --append_label_to_data
                               Append annotations to the dataset.
         -c, --with_custom_split
-                              Perform custom split on training and validation sets (for more details, cf.
-                              paper).
+                              Perform custom split on training and validation sets (for Williams 
+                              et al. (2018) paper).
         -v {loss,acc}, --val_metric {loss,acc}
                               Metric to monitor for validation set. Values: loss or acc.
         -f {facet,openface}, --image_feature {facet,openface}
@@ -111,8 +111,8 @@ with sentiment in range [-3,3] and emotions in range [0,3]. We only focus on emo
         -b BATCH_SIZE, --batch_size BATCH_SIZE
                               Batch size
         -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
-                              Number of steps to fix for all sequences. Set to 0 if you want to keep the
-                              original number of steps.
+                              Number of steps to fix for all sequences. Set to 0 if you want to 
+                              keep the original number of steps.
         -l {1,2,3}, --num_layers {1,2,3}
                               Number of bidirectional layers. Values between 1 and 3.
         -n NUM_NODES, --num_nodes NUM_NODES
@@ -126,13 +126,15 @@ with sentiment in range [-3,3] and emotions in range [0,3]. We only focus on emo
         -mn MODEL_NAME, --model_name MODEL_NAME
                               Name of the model to be saved.
         -cf CSV_FOLDER, --csv_folder CSV_FOLDER
-                              Name of the directory where the csv file containing the results is saved.
+                              Name of the directory where the csv file containing the results is 
+                              saved.
         -cn CSV_NAME, --csv_name CSV_NAME
                               Name of the csv file.
         -e NUM_EPOCHS, --num_epochs NUM_EPOCHS
                               Maximum number of epochs
         -p PATIENCE, --patience PATIENCE
-                              Number of epochs with no improvement after which the training will be stopped.
+                              Number of epochs with no improvement after which the training will 
+                              be stopped.
         -lr LEARNING_RATE, --learning_rate LEARNING_RATE
                               Learning rate
         -lf LOSS_FUNCTION, --loss_function LOSS_FUNCTION
@@ -144,11 +146,9 @@ with sentiment in range [-3,3] and emotions in range [0,3]. We only focus on emo
 
 ## Models available
 
-*The current code runs only the following model for the moment.*
+*The current code only runs the following model. We aim to add more models in this repository.*
 
-- [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion](http://www.aclweb.org/anthology/W18-3302) 
-(updated version of [Multimodal DNN](https://github.com/rhoposit/MultimodalDNN))
+- Williams, J., Kleinegesse, S., Comanescu, R., & Radu, O. (2018, July). [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion](http://www.aclweb.org/anthology/W18-3302). In *Proceedings of Grand Challenge and Workshop on Human Multimodal Language (Challenge-HML)* (pp. 11-19). 
+   - Updated version of [Multimodal DNN](https://github.com/rhoposit/MultimodalDNN)
    - Use standard training, validation and test sets from CMU-MOSEI SDK (instead of using only training and validation sets 
 originally specified in the paper)
-
-
