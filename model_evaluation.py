@@ -146,12 +146,12 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     # Array names of pickle objects to save
     true_sc_save_name = "true_scores_all"  # TODO Use a separate function for that
-    true_sc_coa_save_name = "true_scores_coa"
+    true_sc_coa_save_name = "true_scores_coarse"
     true_cl_pres_save_name = "true_classes_pres"
     true_cl_dom_save_name = "true_classes_dom"
     pred_raw_save_name = "pred_raw_{}".format(parameters_name)
     pred_sc_save_name = "pred_scores_{}".format(parameters_name)
-    pred_sc_coa_save_name = "pred_scores_coa_{}".format(parameters_name)
+    pred_sc_coa_save_name = "pred_scores_coarse_{}".format(parameters_name)
     pred_cl_pres_save_name = "pred_classes_pres_{}".format(parameters_name)
     pred_cl_dom_save_name = "pred_classes_dom_{}".format(parameters_name)
 

@@ -19,55 +19,61 @@ def avg_collapse_function(intervals: np.array, features: np.array) -> np.array:
         return features
 
 
-def download_dataset(dataset_folder, pickle_name_dataset, pickle_folder, align_to_text, append_label_to_data):
+def download_dataset(pickle_name_dataset, align_to_text, append_label_to_data):
     """
     Download CMU-MOSEI dataset using the SDK and perform data alignment (if desired).
 
-    :param dataset_folder: name of the folder where the CMU-MOSEI mmdataset will be downloaded
     :param pickle_name_dataset: name of the pickle object that will contain the CMU-MOSEI mmdataset
-    :param pickle_folder: name of the folder where to save the pickle object
     :param align_to_text: whether we want data to align to the textual modality
     :param append_label_to_data: whether we want data to align to the labels
     """
+
+    # Create pickle_files folder
+    pickle_folder = os.path.join('cmu_mosei', 'pickle_files')
+    if not os.path.isdir(pickle_folder):
+        os.mkdir(pickle_folder)
 
     # The next two lines for safety. The function should be called only if the pickle obj does not exist
     if pickle_file_exists(pickle_name_dataset, pickle_folder):
         print("{} already exists in {} folder. Please change the pickle name.".format(pickle_name_dataset, pickle_folder))
 
     else:
-        if os.path.exists('cmu_mosei'):
+        if os.path.exists('cmu_mosei/'):
             # Retrieve data from cmu_mosei folder
-            cmu_mosei = mmdatasdk.mmdataset(dataset_folder)
+            cmu_mosei = mmdatasdk.mmdataset('cmu_mosei/')
         else:
             # Download data and add them to cmu_mosei folder
-            cmu_mosei = mmdatasdk.mmdataset(mmdatasdk.cmu_mosei.highlevel, dataset_folder)
+            cmu_mosei = mmdatasdk.mmdataset(mmdatasdk.cmu_mosei.highlevel, 'cmu_mosei/')
 
         if align_to_text:
             cmu_mosei.align('glove_vectors', collapse_functions=[avg_collapse_function])
 
         if append_label_to_data:
-            cmu_mosei.add_computational_sequences(mmdatasdk.cmu_mosei.labels, dataset_folder)
+            cmu_mosei.add_computational_sequences(mmdatasdk.cmu_mosei.labels, 'cmu_mosei/')
             cmu_mosei.align('All Labels')
 
         # Save cmu_mosei mmdataset with pickle
         save_with_pickle(cmu_mosei, pickle_name_dataset, pickle_folder)
 
 
-def get_dataset_from_sdk(dataset_folder, pickle_name_dataset, pickle_folder, align_to_text, append_label_to_data):
+def get_dataset_from_sdk(pickle_name_dataset, align_to_text, append_label_to_data):
     """
     Return CMU-MOSEI mmdataset.
 
-    :param dataset_folder: name of the folder where the CMU-MOSEI mmdataset will be downloaded
     :param pickle_name_dataset: name of the pickle object that will contain the CMU-MOSEI mmdataset
-    :param pickle_folder: name of the folder where to save the pickle object
     :param align_to_text: whether we want data to align to the textual modality
     :param append_label_to_data: whether we want data to align to the labels
     :return: CMU-MOSEI mmdataset
     """
 
+    # Create pickle_files folder
+    pickle_folder = os.path.join('cmu_mosei', 'pickle_files')
+    if not os.path.isdir(pickle_folder):
+        os.mkdir(pickle_folder)
+
     if not pickle_file_exists(pickle_name_dataset, pickle_folder):
         # Download from sdk and save with pickle
-        download_dataset(dataset_folder, pickle_name_dataset, pickle_folder, align_to_text, append_label_to_data)
+        download_dataset(pickle_name_dataset, align_to_text, append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
     dataset = load_from_pickle(pickle_name_dataset, pickle_folder)
@@ -141,7 +147,7 @@ def get_fold_ids(with_custom_split):
     return train_ids, valid_ids, test_ids
 
 
-def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold, pickle_folder):
+def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold):
     """
     For each training, validation and test sets, create three lists:
     - one for features (x): arrays of shape (number steps, number features) for text/image/audio features (concatenated
@@ -157,10 +163,14 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     :param test_ids: list of test ids
     :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
     :param pickle_name_fold: root name of the pickle object that contains the training, validation and test folds
-    :param pickle_folder: name of the folder where the pickle object is saved
     :return: 3 lists train_list = [x_train, y_train, seg_train], valid_list = [x_valid, y_valid, seg_valid],
      test_list = [x_test, y_test, seg_test]
     """
+
+    # Create pickle_files folder
+    pickle_folder = os.path.join('cmu_mosei', 'pickle_files')
+    if not os.path.isdir(pickle_folder):
+        os.mkdir(pickle_folder)
 
     # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
     EPS = 0
@@ -251,9 +261,9 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     test_res = [x_test, y_test, seg_test]
 
     # Save lists with pickle
-    save_with_pickle(train_res, pickle_name_fold + "_train.pkl", pickle_folder)
-    save_with_pickle(valid_res, pickle_name_fold + "_valid.pkl", pickle_folder)
-    save_with_pickle(test_res, pickle_name_fold + "_test.pkl", pickle_folder)
+    save_with_pickle(train_res, pickle_name_fold + "_train", pickle_folder)
+    save_with_pickle(valid_res, pickle_name_fold + "_valid", pickle_folder)
+    save_with_pickle(test_res, pickle_name_fold + "_test", pickle_folder)
 
     return train_res, valid_res, test_res
 

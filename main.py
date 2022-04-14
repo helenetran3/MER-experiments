@@ -5,14 +5,10 @@ from model_evaluation import evaluate_model
 import argparse
 
 parser = argparse.ArgumentParser(description="SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.")
-parser.add_argument('-df', '--dataset_folder', type=str,
-                    help="Name of the folder where the CMU-MOSEI mmdataset will be downloaded.")
 parser.add_argument('-pnd', '--pickle_name_dataset', type=str,
                     help="Name of the pickle object that will contain the CMU-MOSEI mmdataset.")
 parser.add_argument('-pnf', '--pickle_name_fold', type=str,
                     help="Name of the pickle object that will contain the training, validation and test folds.")
-parser.add_argument('-pf', '--pickle_folder', type=str,
-                    help="Name of the folder where to save the pickle object that contain the CMU-MOSEI mmdataset.")
 parser.add_argument('-t', '--align_to_text', action='store_true',
                     help="Data will be aligned to the textual modality.")
 parser.add_argument('-al', '--append_label_to_data', action='store_true',
@@ -56,21 +52,20 @@ args = parser.parse_args()
 def main():
 
     # Get data for training, validation and test sets from pickle (split provided by the SDK)
-    if pickle_file_exists(args.pickle_name_fold + "_train", args.pickle_folder):
-        train_list = load_from_pickle(args.pickle_name_fold + "_train", args.pickle_folder)
-        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", args.pickle_folder)
-        test_list = load_from_pickle(args.pickle_name_fold + "_test", args.pickle_folder)
+    if pickle_file_exists(args.pickle_name_fold + "_train", 'cmu_mosei/pickle_files/'):
+        train_list = load_from_pickle(args.pickle_name_fold + "_train", 'cmu_mosei/pickle_files/')
+        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", 'cmu_mosei/pickle_files/')
+        test_list = load_from_pickle(args.pickle_name_fold + "_test", 'cmu_mosei/pickle_files/')
 
     else:
         # Load CMU-MOSEI dataset
-        dataset = get_dataset_from_sdk(args.dataset_folder, args.pickle_name_dataset, args.pickle_folder,
-                                       args.align_to_text, args.append_label_to_data)
+        dataset = get_dataset_from_sdk(args.pickle_name_dataset, args.align_to_text, args.append_label_to_data)
 
         # Get data for training, validation and test sets (split provided by the SDK)
         train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
         train_list, valid_list, test_list = split_dataset(dataset,
                                                           train_ids, valid_ids, test_ids,
-                                                          args.image_feature, args.pickle_name_fold, args.pickle_folder)
+                                                          args.image_feature, args.pickle_name_fold)
 
     # Model training
     history = train_model(train_list, valid_list, test_list,
