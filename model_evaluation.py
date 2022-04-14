@@ -121,7 +121,7 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
 
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
-                   model_folder, model_name, csv_folder, csv_name, predict_neutral_class, round_decimals):
+                   all_models_folder, model_name, predict_neutral_class, round_decimals):
     """
     Evaluate the performance of the best model.
 
@@ -132,17 +132,16 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param num_nodes: Number of nodes for the penultimate dense layer
     :param dropout_rate: Dropout rate before each dense layer
     :param loss_function: Loss function
-    :param model_folder: Name of the directory where the best model is saved
-    :param model_name: Name of the saved model
-    :param csv_folder: Name of the directory where the csv file containing the results is saved
-    :param csv_name: Name of the csv file
+    :param all_models_folder: Name of the directory where all the models are saved
+    :param model_name: Name of the model currently tested
     :param predict_neutral_class: Whether we predict the neutral class
     :param round_decimals: Number of decimals to be rounded for metrics
     """
 
     # Load best model
     parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
-    model_save_name = "{}_{}.h5".format(model_name, parameters_name)
+    model_save_name = "{}.h5".format(parameters_name)
+    model_folder = os.path.join(all_models_folder, model_name)
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
 
@@ -217,7 +216,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Confusion matrix (binary classification: whether an emotion is present or not)
     num_classes = true_classes_pres.shape[1]
     conf_matrix = multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, labels=list(range(num_classes)))
-    save_with_pickle(conf_matrix, 'conf_matrix_{}_{}'.format(model_name, parameters_name), model_folder)
+    save_with_pickle(conf_matrix, 'conf_mat_{}'.format(parameters_name), model_folder)
 
     print("\n\n================================= Model Evaluation ===========================================")
 
@@ -238,6 +237,6 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     print("\n----- Prediction of a dominant emotion -----")
     metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
 
-    save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+    save_results_in_csv_file(all_models_folder, model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, mae, mse, metrics_presence, metrics_dominant,
                              predict_neutral_class)

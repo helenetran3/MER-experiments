@@ -55,14 +55,13 @@ def load_from_pickle(pickle_name, pickle_folder):
     return p_object
 
 
-def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+def save_results_in_csv_file(all_models_folder, model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, mae, mse, metrics_presence, metrics_dominant,
                              predict_neutral_class):
     """
     Save results of a single model to a csv file.
 
-    :param csv_name: Name of the directory where the csv file containing the results is saved
-    :param csv_folder: Name of the csv file
+    :param model_name: Name of the model currently tested
     :param num_layers: Number of bidirectional layers for the model
     :param num_nodes: Number of nodes for the penultimate dense layer
     :param dropout_rate: Dropout rate before each dense layer
@@ -90,16 +89,15 @@ def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropou
                 writer.writerow(header)
                 writer.writerow(data_to_save)
 
-    # Create filenames
-    csv_name_regression = csv_name + "_regression.csv"
-    csv_name_presence = csv_name + "_classif_pres.csv"
-    csv_name_dominant = csv_name + "_classif_dom.csv"
-    csv_path_regression = os.path.join(csv_folder, csv_name_regression)
-    csv_path_presence = os.path.join(csv_folder, csv_name_presence)
-    csv_path_dominant = os.path.join(csv_folder, csv_name_dominant)
+    # Create csv folder
+    model_csv_folder = os.path.join(all_models_folder, model_name, 'csv')
+    if not os.path.isdir(model_csv_folder):
+        os.mkdir(model_csv_folder)
 
-    if not os.path.isdir(csv_folder):
-        os.mkdir(csv_folder)
+    # Create filenames
+    csv_path_regression = os.path.join(all_models_folder, model_name, 'csv', "regression.csv")
+    csv_path_presence = os.path.join(all_models_folder, model_name, 'csv', "classification_presence.csv")
+    csv_path_dominant = os.path.join(all_models_folder, model_name, 'csv', "classification_dominant.csv")
 
     # Create headers for metrics of each emotion
     metrics = ['f1', 'rec', 'roc_auc']

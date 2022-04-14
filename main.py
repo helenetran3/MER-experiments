@@ -36,14 +36,10 @@ parser.add_argument('-d', '--dropout_rate', type=float,
                     help="Dropout rate")
 parser.add_argument('-a', '--final_activ', type=str,
                     help="Activation function of the final layer.")
-parser.add_argument('-mf', '--model_folder', type=str,
-                    help="Name of the directory where the models will be saved.")
+parser.add_argument('-mf', '--all_models_folder', type=str,
+                    help="Name of the directory where all the models will be saved.")
 parser.add_argument('-mn', '--model_name', type=str,
-                    help="Name of the model to be saved.")
-parser.add_argument('-cf', '--csv_folder', type=str,
-                    help="Name of the directory where the csv file containing the results is saved.")
-parser.add_argument('-cn', '--csv_name', type=str,
-                    help="Name of the csv file.")
+                    help="Name of the model currently tested.")
 parser.add_argument('-e', '--num_epochs', type=int,
                     help="Maximum number of epochs")
 parser.add_argument('-p', '--patience', type=int,
@@ -82,10 +78,10 @@ def main():
     history = train_model(train_list, valid_list, test_list,
                           args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,
                           args.num_nodes, args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function,
-                          args.val_metric, args.patience, args.model_folder, args.model_name)
+                          args.val_metric, args.patience, args.all_models_folder, args.model_name)
 
     evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.num_layers, args.num_nodes, args.dropout_rate,
-                   args.loss_function, args.model_folder, args.model_name, args.csv_folder, args.csv_name,
+                   args.loss_function, args.all_models_folder, args.model_name,
                    args.predict_neutral_class, args.round_decimals)
 
 

@@ -27,10 +27,8 @@ python3 main.py \
 --num_nodes 100 \
 --dropout_rate 0.2 \
 --final_activ linear \
---model_folder models/ \
+--all_models_folder models/ \
 --model_name MultimodalDNN \
---csv_folder models/csv/ \
---csv_name MultimodalDNN-results \
 --num_epochs 2 \
 --patience 1 \
 --learning_rate 0.001 \

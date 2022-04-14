@@ -60,7 +60,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
 def train_model(train_list, valid_list, test_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
-                val_metric, patience, model_folder, model_name):
+                val_metric, patience, all_models_folder, model_name):
     """
     Train the model.
 
@@ -79,8 +79,8 @@ def train_model(train_list, valid_list, test_list,
     :param loss_function: Loss function
     :param val_metric: Metric on validation data to monitor
     :param patience: Number of epochs with no improvement after which the training will be stopped
-    :param model_folder: Name of the directory where the models will be saved
-    :param model_name: Name of the model to be saved
+    :param all_models_folder: Name of the directory where the models will be saved
+    :param model_name: Name of the model currently tested
     :return: history of the model training
     """
 
@@ -103,10 +103,13 @@ def train_model(train_list, valid_list, test_list,
                                    train_mode=True)
 
     # Parameters to save model
+    model_folder = os.path.join(all_models_folder, model_name)
+    if not os.path.isdir(all_models_folder):
+        os.mkdir(all_models_folder)
     if not os.path.isdir(model_folder):
         os.mkdir(model_folder)
-    model_save_name = "{}_l_{}_n_{}_d_{}_b_{}_s_{}.h5".format(model_name, num_layers, num_nodes, dropout_rate,
-                                                              batch_size, fixed_num_steps)
+    model_save_name = "l_{}_n_{}_d_{}_b_{}_s_{}.h5".format(num_layers, num_nodes, dropout_rate, 
+                                                           batch_size, fixed_num_steps)
     model_save_path = os.path.join(model_folder, model_save_name)
 
     # Parameters for metric monitoring
