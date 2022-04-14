@@ -2,7 +2,7 @@ import os.path
 
 from dataset_utils import get_tf_dataset
 
-from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam

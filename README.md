@@ -144,6 +144,19 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
 
     ```
 
+
+## Outputs generated
+
+*All words in italics in this table below corresponds to a parameter that can be set (cf. previous section). For the sake of clarity, we call* parameters_name='l\_{num_layers}\_n\_{num_nodes}\_d\_{dropout_rate}\_b\_{batch_size}\_s\_{fixed_num_steps}'.
+
+Objects | Files | Description | Folder 
+--------|-------|-------------|-------
+Dataset | {*pickle_name_dataset*}.pkl | mmdataset object obtained from CMU-MOSEI SDK | *dataset_folder* 
+Fold    | {*pickle_name_fold*}_train.pkl <br> {*pickle_name_fold*}_valid.pkl <br> {*pickle_name_fold*}_test.pkl | Lists of 3 elements for training, validation, and test sets respectively: <br> - **features (x)**: list of arrays of shape (number steps, number features) for text/image/audio features (concatenated in this order) <br> - **labels (y)**: list of arrays of shape (1, 7) for the 7 emotions <br> - **segment ids (seg)**: list of ids of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]' | *pickle_folder*
+Models  | {*model_name*}\_{*parameters_name*}.h5 | Best model with a given set of hyperparameters | *model_folder*
+True labels from test set | true_scores_all.pkl <br> true_scores_coarse.pkl <br> true_classes_pres.pkl <br> true_classes_dom.pkl | Arrays of shape (test size, number classes) with number of classes equal to 7 with the neutral class, or 6 without. <br> They represent the true labels with different granularity: <br> **scores_all**: presence scores provided by the annotations, with values among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3] <br> **scores_coarse**: presence scores with values among [0, 1, 2, 3] <br> **classes_pres**: binary array detecting the presence of an emotion (presence score > 0) <br> **classes_dom**: binary array identifying the dominant emotion(s) (the highest presence score) | *model_folder*
+Predicted labels from test set | pred_scores_all_{*parameters_name*}.pkl <br> pred_scores_coarse_{*parameters_name*}.pkl <br> pred_classes_pres_{*parameters_name*}.pkl <br> pred_classes_dom_{*parameters_name*}.pkl | The predicted presence scores or class. Cf. description above done for "True labels from test set". | *model_folder*
+
 ## Models available
 
 *The current code only runs the following model. We aim to add more models in this repository.*
