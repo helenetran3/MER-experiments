@@ -56,7 +56,7 @@ def load_from_pickle(pickle_name, pickle_folder):
 
 
 def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
-                             loss_function, loss_function_val, mae, mse, metrics_presence, metrics_dominant,
+                             loss_function, loss_function_val, metrics_regression, metrics_presence, metrics_dominant,
                              predict_neutral_class):
     """
     Save results of a single model to a csv file.
@@ -69,8 +69,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
     :param loss_function: Loss function
     :param loss_function_val: Loss function obtained by the model
-    :param mae: Mean absolute error
-    :param mse: Mean squared error
+    :param metrics_regression: List of metrics for regression (w.r.t the presence scores)
     :param metrics_presence: List of metrics for detecting the presence/absence of an emotion
     :param metrics_dominant: List of metrics for detecting the dominant emotion(s)
     :param predict_neutral_class: Whether we predict the neutral class
@@ -123,7 +122,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     # Create data rows
     data_param = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, predict_neutral_class,
                   loss_function_val]
-    data_regression = data_param + [mae, mse]
+    data_regression = data_param + metrics_regression
     data_presence = data_param + metrics_presence
     data_dominant = data_param + metrics_dominant
 
