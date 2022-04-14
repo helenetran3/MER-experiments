@@ -147,15 +147,15 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     model = load_model(model_save_path)
 
     # Array names of pickle objects to save
-    true_sc_save_name = "true_scores_all.pkl"  # TODO Use a separate function for that
-    true_sc_coa_save_name = "true_scores_coarse.pkl"
-    true_cl_pres_save_name = "true_classes_pres.pkl"
-    true_cl_dom_save_name = "true_classes_dom.pkl"
-    pred_raw_save_name = "pred_raw_{}.pkl".format(parameters_name)
-    pred_sc_save_name = "pred_scores_{}.pkl".format(parameters_name)
-    pred_sc_coa_save_name = "pred_scores_coarse_{}.pkl".format(parameters_name)
-    pred_cl_pres_save_name = "pred_classes_pres_{}.pkl".format(parameters_name)
-    pred_cl_dom_save_name = "pred_classes_dom_{}.pkl".format(parameters_name)
+    true_sc_save_name = "true_scores_all"  # TODO Use a separate function for that
+    true_sc_coa_save_name = "true_scores_coa"
+    true_cl_pres_save_name = "true_classes_pres"
+    true_cl_dom_save_name = "true_classes_dom"
+    pred_raw_save_name = "pred_raw_{}".format(parameters_name)
+    pred_sc_save_name = "pred_scores_{}".format(parameters_name)
+    pred_sc_coa_save_name = "pred_scores_coa_{}".format(parameters_name)
+    pred_cl_pres_save_name = "pred_classes_pres_{}".format(parameters_name)
+    pred_cl_dom_save_name = "pred_classes_dom_{}".format(parameters_name)
 
     # Extract x, y and seg_ids for test set
     x_test = test_list[0]  # each element of shape (29, 409)
@@ -168,9 +168,9 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # TODO remove sentiment prediction from model training and evaluation, and change the code consequently
     true_scores_all = np.reshape(np.array(y_test), (-1, 7))
     true_scores_all = true_scores_all[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
-    true_scores_coarse = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, coarse=True)
+    true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, coarse=True)
     save_with_pickle(true_scores_all, true_sc_save_name, model_folder)
-    save_with_pickle(true_scores_coarse, true_sc_coa_save_name, model_folder)
+    save_with_pickle(true_scores_coa, true_sc_coa_save_name, model_folder)
 
     # Compute true classes: binary arrays of shape (4654, 7)
     true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class)
@@ -217,7 +217,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Confusion matrix (binary classification: whether an emotion is present or not)
     num_classes = true_classes_pres.shape[1]
     conf_matrix = multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, labels=list(range(num_classes)))
-    save_with_pickle(conf_matrix, 'conf_matrix_' + model_save_name, model_folder)
+    save_with_pickle(conf_matrix, 'conf_matrix_{}_{}'.format(model_name, parameters_name), model_folder)
 
     print("\n\n================================= Model Evaluation ===========================================")
 

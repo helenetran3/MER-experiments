@@ -92,8 +92,8 @@ def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropou
 
     # Create filenames
     csv_name_regression = csv_name + "_regression.csv"
-    csv_name_presence = csv_name + "_classif_presence.csv"
-    csv_name_dominant = csv_name + "_classif_dominant.csv"
+    csv_name_presence = csv_name + "_classif_pres.csv"
+    csv_name_dominant = csv_name + "_classif_dom.csv"
     csv_path_regression = os.path.join(csv_folder, csv_name_regression)
     csv_path_presence = os.path.join(csv_folder, csv_name_presence)
     csv_path_dominant = os.path.join(csv_folder, csv_name_dominant)
@@ -116,15 +116,15 @@ def save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropou
     header_dominant_overall = ['dom_{}'.format(m) for m in metrics_overall]
 
     # Create the whole header for each csv file
-    header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', loss_function,
-                    'with_neutral_class']
+    header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', 'with_neutral_class',
+                    loss_function]
     header_regression = header_param + ['mae', 'mse']
     header_presence = header_param + header_presence_overall + header_presence_per_emotion
     header_dominant = header_param + header_dominant_overall + header_dominant_per_emotion
 
     # Create data rows
-    data_param = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, loss_function_val,
-                  predict_neutral_class]
+    data_param = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, predict_neutral_class,
+                  loss_function_val]
     data_regression = data_param + [mae, mse]
     data_presence = data_param + metrics_presence
     data_dominant = data_param + metrics_dominant
