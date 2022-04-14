@@ -12,17 +12,17 @@ from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, r
 from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
 
 
-def get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores, coarse=False):
+def get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores_all, coarse=False):
     """
 
     :param pred_raw_emo: array of shape (test_size, 6) predicting the 6 emotions
-    :param true_scores: array of shape (test_size, 7) giving the true sentiment and the 6 emotions
+    :param true_scores_all: array of shape (test_size, 7) giving the true sentiment and the 6 emotions
     :param coarse: if True, the resulting presence scores in [0, 1, 2, 3].
                    Default: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     :return: array of shape (test_size, 6) giving the presence score of all the 6 emotions
     """
     le = LabelEncoder()
-    le.fit(true_scores[:, 1:].flatten())
+    le.fit(true_scores_all[:, 1:].flatten())
     classes = le.classes_ if not coarse else [0, 1, 2, 3]
     pred_raw_emo = pred_raw_emo.flatten()
     pred_scores = [min(list(classes), key=lambda x: abs(x - pred_raw_emo[i])) for i in range(pred_raw_emo.shape[0])]
@@ -147,15 +147,15 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     model = load_model(model_save_path)
 
     # Array names of pickle objects to save
-    true_sc_save_name = "true_scores_{}.h5".format(parameters_name)
-    true_sc_coa_save_name = "true_scores_coarse_{}.h5".format(parameters_name)
-    true_cl_pres_save_name = "true_classes_pres_{}.h5".format(parameters_name)
-    true_cl_dom_save_name = "true_classes_dom_{}.h5".format(parameters_name)
-    pred_raw_save_name = "pred_raw_{}.h5".format(parameters_name)
-    pred_sc_save_name = "pred_scores_{}.h5".format(parameters_name)
-    pred_sc_coa_save_name = "pred_scores_coarse_{}.h5".format(parameters_name)
-    pred_cl_pres_save_name = "pred_classes_pres_{}.h5".format(parameters_name)
-    pred_cl_dom_save_name = "pred_classes_dom_{}.h5".format(parameters_name)
+    true_sc_save_name = "true_scores_all.pkl"  # TODO Use a separate function for that
+    true_sc_coa_save_name = "true_scores_coarse.pkl"
+    true_cl_pres_save_name = "true_classes_pres.pkl"
+    true_cl_dom_save_name = "true_classes_dom.pkl"
+    pred_raw_save_name = "pred_raw_{}.pkl".format(parameters_name)
+    pred_sc_save_name = "pred_scores_{}.pkl".format(parameters_name)
+    pred_sc_coa_save_name = "pred_scores_coarse_{}.pkl".format(parameters_name)
+    pred_cl_pres_save_name = "pred_classes_pres_{}.pkl".format(parameters_name)
+    pred_cl_dom_save_name = "pred_classes_dom_{}.pkl".format(parameters_name)
 
     # Extract x, y and seg_ids for test set
     x_test = test_list[0]  # each element of shape (29, 409)
@@ -166,18 +166,18 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     # Coarse-grained values: [0, 1, 2, 3]
     # TODO remove sentiment prediction from model training and evaluation, and change the code consequently
-    true_scores = np.reshape(np.array(y_test), (-1, 7))
-    true_scores = true_scores[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
-    true_scores_coarse = get_presence_score_from_finer_grained_val(true_scores, true_scores, coarse=True)
-    save_with_pickle(true_scores, true_sc_save_name, model_folder)
+    true_scores_all = np.reshape(np.array(y_test), (-1, 7))
+    true_scores_all = true_scores_all[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
+    true_scores_coarse = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, coarse=True)
+    save_with_pickle(true_scores_all, true_sc_save_name, model_folder)
     save_with_pickle(true_scores_coarse, true_sc_coa_save_name, model_folder)
 
     # Compute true classes: binary arrays of shape (4654, 7)
-    true_classes_pres = get_class_from_presence_score(true_scores, predict_neutral_class)
-    true_classes_dom = get_class_from_presence_score(true_scores, predict_neutral_class, only_dominant=True)
+    true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class)
+    true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, only_dominant=True)
     save_with_pickle(true_classes_pres, true_cl_pres_save_name, model_folder)
     save_with_pickle(true_classes_dom, true_cl_dom_save_name, model_folder)
-    # print("true_scores[:10, 1:]:\n", true_scores[:10, 1:])
+    # print("true_scores_all[:10, 1:]:\n", true_scores_all[:10, 1:])
     # print("true_classes_pres[:10, :]:\n", true_classes_pres[:10, :])
     # print("true_classes_dom[:10, :]:\n", true_classes_dom[:10, :])
 
@@ -198,8 +198,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     # Get presence scores from raw predictions
     pred_raw_emo = pred_raw[:, 1:]  # (4654, 6), removed the sentiment column  # TODO Reminder: Change here
-    pred_scores = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores)
-    pred_scores_coa = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores, coarse=True)
+    pred_scores = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores_all)
+    pred_scores_coa = get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores_all, coarse=True)
     save_with_pickle(pred_scores, pred_sc_save_name, model_folder)
     save_with_pickle(pred_scores_coa, pred_sc_coa_save_name, model_folder)
 
@@ -225,8 +225,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     print("Loss function ({}): {}".format(loss_function, loss_function_val))
 
     # Regression metrics
-    mae = round(mean_absolute_error(true_scores, pred_raw_emo), round_decimals)
-    mse = round(mean_squared_error(true_scores, pred_raw_emo), round_decimals)
+    mae = round(mean_absolute_error(true_scores_all, pred_raw_emo), round_decimals)
+    mse = round(mean_squared_error(true_scores_all, pred_raw_emo), round_decimals)
     print("Mean absolute error:", mae)
     print("Mean squared error:", mse)
 
