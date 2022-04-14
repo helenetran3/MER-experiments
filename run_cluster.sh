@@ -27,7 +27,6 @@ python3 main.py \
 --num_nodes 100 \
 --dropout_rate 0.2 \
 --final_activ linear \
---all_models_folder models/ \
 --model_name MultimodalDNN \
 --num_epochs 2 \
 --patience 1 \

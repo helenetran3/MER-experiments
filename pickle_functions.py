@@ -55,7 +55,7 @@ def load_from_pickle(pickle_name, pickle_folder):
     return p_object
 
 
-def save_results_in_csv_file(all_models_folder, model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, mae, mse, metrics_presence, metrics_dominant,
                              predict_neutral_class):
     """
@@ -90,14 +90,14 @@ def save_results_in_csv_file(all_models_folder, model_name, num_layers, num_node
                 writer.writerow(data_to_save)
 
     # Create csv folder
-    model_csv_folder = os.path.join(all_models_folder, model_name, 'csv')
+    model_csv_folder = os.path.join('models', model_name, 'csv')
     if not os.path.isdir(model_csv_folder):
         os.mkdir(model_csv_folder)
 
     # Create filenames
-    csv_path_regression = os.path.join(all_models_folder, model_name, 'csv', "regression.csv")
-    csv_path_presence = os.path.join(all_models_folder, model_name, 'csv', "classification_presence.csv")
-    csv_path_dominant = os.path.join(all_models_folder, model_name, 'csv', "classification_dominant.csv")
+    csv_path_regression = os.path.join('models', model_name, 'csv', "regression.csv")
+    csv_path_presence = os.path.join('models', model_name, 'csv', "classification_presence.csv")
+    csv_path_dominant = os.path.join('models', model_name, 'csv', "classification_dominant.csv")
 
     # Create headers for metrics of each emotion
     metrics = ['f1', 'rec', 'roc_auc']
