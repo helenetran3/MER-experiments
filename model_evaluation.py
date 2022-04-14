@@ -233,9 +233,9 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     ## TODO Quatre cas: les scores de présence par défaut, 4 scores de présence, présence ou absence d'une émotion et
     ## TODO             classification de le ou les émotions dominantes -> utile pour l'ambiguité
     # Classification metrics
-    print("\n----- presence -----")
+    print("\n------ Presence/absence of an emotion ------")
     metrics_presence = get_classification_metrics(true_classes_pres, pred_classes_pres, num_classes, round_decimals)
-    print("\n----- dominant -----")
+    print("\n----- Prediction of a dominant emotion -----")
     metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
 
     save_results_in_csv_file(csv_name, csv_folder, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
