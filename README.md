@@ -57,12 +57,15 @@ Some useful details on the [CMU-Multimodal SDK](https://github.com/A2Zadeh/CMU-M
 - The labels provided for each segment are: **[sentiment, happy, sad, anger, surprise, disgust, fear]** in this order,
 with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repository, we only focus on emotions.
 
+[Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:
+
 ## Environment
 - Python 3.9.7
 - TensorFlow 2.8
 - Keras 2.8
 - NumPy 1.20.3
 
+[Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:
 
 ## How to run the code
 1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
@@ -135,6 +138,7 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
 
     ```
 
+[Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:
 
 ## Outputs generated
 
@@ -152,6 +156,8 @@ For the sake of clarity, we call:*
 | Confusion matrix               | conf_matrix_{*model_name*}_{*param*}.pkl                                                                                                     | Multilabel confusion matrix based on the presence/absence of each emotion                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | models/<br>*model_name/*     |
 | Metrics                        | regression.csv <br> classification_presence.csv  <br> classification_dominant.csv                                                            | CSV files with all the metrics: <br> **reg**: Regression metrics calculated from the closeness with the presence score <br> **classif_pres**: Classification metrics based on the presence/absence of an emotion (presence score > 0) <br> **classif_dom**: Classification metrics based on identifying the dominant emotion(s) (the highest presence score)                                                                                                                                                                                                                                                 | models/<br>*model_name*/csv/ |
 
+[Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:
+
 ## Models available
 
 *The current code only runs the following model. We aim to add more models in this repository.*
@@ -160,3 +166,5 @@ For the sake of clarity, we call:*
    - Updated version of [Multimodal DNN](https://github.com/rhoposit/MultimodalDNN)
    - Use standard training, validation and test sets from CMU-MOSEI SDK (instead of using only training and validation sets 
 originally specified in the paper)
+
+[Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:
