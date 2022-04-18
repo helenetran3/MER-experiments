@@ -2,7 +2,7 @@
 
 :dart: This repository is intended to experiment state-of-the-art codes on Multimodal Emotion Recognition.
 
-Feel free to open an issue on this repository if you have any question or remark. Thank you for your interest!
+The code is not ready yet and this README will be updated once it is (it will be ready by the end of this week). Feel free to open an issue on this repository if you have any question or remark. Thank you for your interest!
 
 
 ### README Structure
@@ -10,7 +10,8 @@ Feel free to open an issue on this repository if you have any question or remark
 1. [CMU-MOSEI Database](#CMU-MOSEI-Database)
 2. [Environment](#Environment)
 3. [How to run the code](#How-to-run-the-code)
-4. [Models available](#models-available)
+4. [Output generated](#outputs-generated)
+5. [Models available](#models-available)
 
 ## CMU-MOSEI Database
 
