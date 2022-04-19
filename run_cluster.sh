@@ -7,7 +7,8 @@
 #SBATCH --ntasks=1            # nb de tasks total pour le job
 #SBATCH --cpus-per-task=20    # nb CPU pour une task
 #SBATCH --mem=64000           # mémoire nécessaire (par noeud) en Mo
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=END
+#SBATCH --mail-type=FAIL
 #SBATCH --mail-user=helene.tran@doctorant.uca.fr
  
 #===============================================================================

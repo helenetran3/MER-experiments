@@ -378,6 +378,9 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     ## TODO             classification de le ou les émotions dominantes -> utile pour l'ambiguité
     # Classification metrics
     print("\n------ Presence score for each emotion ------")
+    metrics_score_coa = [-1]  # temporary
+    # TODO Compute the classification metrics for coarse presence scores
+    # metrics_score_coa = get_classification_metrics(true_scores_coa, pred_scores_coa, num_classes, round_decimals)
     metrics_score_coa = get_classification_metrics(true_scores_coa, pred_scores_coa, num_classes, round_decimals)
     print("\n------ Presence/absence of an emotion ------")
     metrics_presence = get_classification_metrics(true_classes_pres, pred_classes_pres, num_classes, round_decimals)
