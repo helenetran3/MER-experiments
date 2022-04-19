@@ -99,7 +99,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     csv_path_dominant = os.path.join('models', model_name, 'csv', "classification_dominant.csv")
 
     # Create headers for metrics of each emotion
-    metrics = ['f1', 'rec', 'roc_auc']
+    metrics = ['f1', 'rec', 'prec', 'roc_auc']
     emotions = ['happy', 'sad', 'anger', 'surprise', 'disgust', 'fear']
     if predict_neutral_class:
         emotions.append('neutral')
@@ -107,8 +107,8 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     header_dominant_per_emotion = ['dom_{}_{}'.format(m, e) for m in metrics for e in emotions]
 
     # Create headers for global metrics
-    metrics_overall = ['acc', 'f1_unweighted', 'f1_weighted', 'rec_unweighted', 'rec_weighted', 'roc_auc_unweighted',
-                       'roc_auc_weighted']
+    metrics_overall = ['acc', 'f1_unweighted', 'f1_weighted', 'rec_unweighted', 'rec_weighted', 'prec_unweighted', 
+                       'prec_weighted', 'roc_auc_unweighted', 'roc_auc_weighted']
     header_presence_overall = ['pres_{}'.format(m) for m in metrics_overall]
     header_dominant_overall = ['dom_{}'.format(m) for m in metrics_overall]
 

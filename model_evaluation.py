@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import csv
 
 from tensorflow.keras.models import load_model
 from pickle_functions import save_with_pickle, pickle_file_exists, load_from_pickle, save_results_in_csv_file
@@ -8,7 +7,7 @@ from dataset_utils import get_tf_dataset
 
 from sklearn.preprocessing import LabelEncoder, label_binarize, MultiLabelBinarizer
 from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
-from sklearn.metrics import f1_score, accuracy_score, balanced_accuracy_score, recall_score
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
 
 
@@ -173,9 +172,10 @@ def get_regression_metrics(true_scores_all, pred_raw_emo, round_decimals):
 def get_classification_metrics(true_classes, pred_classes, num_classes, round_decimals):
     """
     Compute classification metrics.
-     Accuracy, balanced accuracy
+     Accuracy
      F1 for each emotion, unweighted and weighted F1
      Recall for each emotion, unweighted and weighted recall
+     Precision for each emotion, unweighted and weighted precision
      ROC AUC for each emotion, unweighted and weighted ROC AUC
     :param true_classes: binary array of true classes, shape (test_size, num_classes) (num_classes = 7 if with neutral class, else 6)
     :param pred_classes: binary array of predictions, shape (test_size, num_classes) (num_classes = 7 if with neutral class, else 6)
@@ -191,6 +191,9 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
     rec_each = recall_score(true_classes, pred_classes, average=None)
     rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
     rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    prec_each = precision_score(true_classes, pred_classes, average=None)
+    prec_macro = round(precision_score(true_classes, pred_classes, average='macro'), round_decimals)
+    prec_weighted = round(precision_score(true_classes, pred_classes, average='weighted'), round_decimals)
     true_classes_bin = label_binarize(true_classes, classes=list(range(num_classes)))
     pred_classes_bin = label_binarize(pred_classes, classes=list(range(num_classes)))
     roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
@@ -201,6 +204,7 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
 
     f1_each_rounded = [round(val, round_decimals) for val in f1_each]
     rec_each_rounded = [round(val, round_decimals) for val in rec_each]
+    prec_each_rounded = [round(val, round_decimals) for val in prec_each]
     roc_auc_each_rounded = [round(val, round_decimals) for val in roc_auc_each]
 
     print("Multilabel Accuracy:", acc)
@@ -210,12 +214,15 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
     print("Recall (for each):", rec_each_rounded)
     print("Recall (unweighted mean):", rec_macro)
     print("Recall (weighted mean):", rec_weighted)
+    print("Precision (for each):", prec_each_rounded)
+    print("Precision (unweighted mean):", prec_macro)
+    print("Precision (weighted mean):", prec_weighted)
     print("ROC AUC (for each):", roc_auc_each_rounded)
     print("ROC AUC (unweighted mean):", roc_auc_macro)
     print("ROC AUC (weighted mean):", roc_auc_weighted)
 
-    res = [acc, f1_macro, f1_weighted, rec_macro, rec_weighted, roc_auc_macro, roc_auc_weighted]
-    res = res + f1_each_rounded + rec_each_rounded + roc_auc_each_rounded
+    res = [acc, f1_macro, f1_weighted, rec_macro, rec_weighted, prec_macro, prec_weighted, roc_auc_macro, roc_auc_weighted]
+    res = res + f1_each_rounded + rec_each_rounded + prec_each_rounded + roc_auc_each_rounded
 
     return res
 
