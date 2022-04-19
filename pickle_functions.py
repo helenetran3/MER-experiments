@@ -56,8 +56,8 @@ def load_from_pickle(pickle_name, pickle_folder):
 
 
 def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
-                             loss_function, loss_function_val, metrics_regression, metrics_presence, metrics_dominant,
-                             predict_neutral_class):
+                             loss_function, loss_function_val, metrics_regression, metrics_score_coa,
+                             metrics_presence, metrics_dominant, predict_neutral_class):
     """
     Save results of a single model to a csv file.
 
@@ -70,6 +70,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     :param loss_function: Loss function
     :param loss_function_val: Loss function obtained by the model
     :param metrics_regression: List of metrics for regression (w.r.t the presence scores)
+    :param metrics_score_coa: List of metrics for classifying the presence score of each emotion
     :param metrics_presence: List of metrics for detecting the presence/absence of an emotion
     :param metrics_dominant: List of metrics for detecting the dominant emotion(s)
     :param predict_neutral_class: Whether we predict the neutral class
@@ -95,6 +96,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
 
     # Create filenames
     csv_path_regression = os.path.join('models', model_name, 'csv', "regression.csv")
+    csv_path_score_coa = os.path.join('models', model_name, 'csv', "classification_score_coarse.csv")
     csv_path_presence = os.path.join('models', model_name, 'csv', "classification_presence.csv")
     csv_path_dominant = os.path.join('models', model_name, 'csv', "classification_dominant.csv")
 
@@ -103,12 +105,14 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     emotions = ['happy', 'sad', 'anger', 'surprise', 'disgust', 'fear']
     if predict_neutral_class:
         emotions.append('neutral')
+    header_score_coa_per_emotion = ['sc_coa_{}_{}'.format(m, e) for m in metrics for e in emotions]
     header_presence_per_emotion = ['pres_{}_{}'.format(m, e) for m in metrics for e in emotions]
     header_dominant_per_emotion = ['dom_{}_{}'.format(m, e) for m in metrics for e in emotions]
 
     # Create headers for global metrics
     metrics_overall = ['acc', 'f1_unweighted', 'f1_weighted', 'rec_unweighted', 'rec_weighted', 'prec_unweighted', 
                        'prec_weighted', 'roc_auc_unweighted', 'roc_auc_weighted']
+    header_score_coa_overall = ['sc_coa_{}'.format(m) for m in metrics_overall]
     header_presence_overall = ['pres_{}'.format(m) for m in metrics_overall]
     header_dominant_overall = ['dom_{}'.format(m) for m in metrics_overall]
 
@@ -116,6 +120,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', 'with_neutral_class',
                     loss_function]
     header_regression = header_param + ['mae', 'mse']
+    header_score_coa = header_param + header_score_coa_overall + header_score_coa_per_emotion
     header_presence = header_param + header_presence_overall + header_presence_per_emotion
     header_dominant = header_param + header_dominant_overall + header_dominant_per_emotion
 
@@ -123,15 +128,18 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     data_param = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, predict_neutral_class,
                   loss_function_val]
     data_regression = data_param + metrics_regression
+    data_score_coa = data_param + metrics_score_coa
     data_presence = data_param + metrics_presence
     data_dominant = data_param + metrics_dominant
 
     # print(len(header_regression), len(data_regression))
+    # print(len(header_score_coa), len(data_score_coa))
     # print(len(header_dominant), len(data_dominant))
     # print(len(header_presence), len(data_presence))
 
     # Write in csv files
     write_csv(csv_path_regression, header_regression, data_regression)
+    write_csv(csv_path_score_coa, header_score_coa, data_score_coa)
     write_csv(csv_path_presence, header_presence, data_presence)
     write_csv(csv_path_dominant, header_dominant, data_dominant)
 

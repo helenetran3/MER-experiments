@@ -152,7 +152,7 @@ def compute_true_labels(true_scores_all, model_folder, predict_neutral_class):
         true_classes_pres = load_from_pickle("true_classes_pres", model_folder)
         true_classes_dom = load_from_pickle("true_classes_dom", model_folder)
 
-        return true_scores_coa, true_classes_pres, true_classes_dom
+    return true_scores_coa, true_classes_pres, true_classes_dom
 
 
 def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, parameters_name, model_folder):
@@ -377,11 +377,13 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     ## TODO Quatre cas: les scores de présence par défaut, 4 scores de présence, présence ou absence d'une émotion et
     ## TODO             classification de le ou les émotions dominantes -> utile pour l'ambiguité
     # Classification metrics
+    print("\n------ Presence score for each emotion ------")
+    metrics_score_coa = get_classification_metrics(true_scores_coa, pred_scores_coa, num_classes, round_decimals)
     print("\n------ Presence/absence of an emotion ------")
     metrics_presence = get_classification_metrics(true_classes_pres, pred_classes_pres, num_classes, round_decimals)
     print("\n----- Prediction of a dominant emotion -----")
     metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
 
     save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
-                             loss_function, loss_function_val, metrics_regression, metrics_presence, metrics_dominant,
-                             predict_neutral_class)
+                             loss_function, loss_function_val, metrics_regression, metrics_score_coa, metrics_presence,
+                             metrics_dominant, predict_neutral_class)
