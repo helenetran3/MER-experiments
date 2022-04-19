@@ -14,8 +14,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_sco
 def get_presence_score_from_finer_grained_val(pred_raw_emo, true_scores_all, coarse=False):
     """
 
-    :param pred_raw_emo: array of shape (test_size, 6) predicting the 6 emotions
-    :param true_scores_all: array of shape (test_size, 7) giving the true sentiment and the 6 emotions
+    :param pred_raw_emo: array of shape (test_size, 6) predicting the presence score of the 6 emotions
+    :param true_scores_all: array of shape (test_size, 7) giving the true sentiment and the presence score of the 6 emotions
     :param coarse: if True, the resulting presence scores in [0, 1, 2, 3].
                    Default: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     :return: array of shape (test_size, 6) giving the presence score of all the 6 emotions
@@ -70,6 +70,21 @@ def get_class_from_presence_score(score_array, with_neutral_class, only_dominant
 
 
 def compute_true_labels(y_test, model_folder, predict_neutral_class):
+    """
+    Compute the true labels (all arrays of shape (test_size, 6))
+    true_scores_all: Closest true score among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
+    true_scores_coa: Closest true score among [0, 1, 2, 3]
+    true_classes_pres: Emotions truly present (default threshold: presence score > 0)
+    true_classes_dom: Emotions truly dominant (highest presence score)
+
+
+    :param pred_raw: array of shape (test_size, 7) predicting the presence score of the 6 emotions
+    :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database)
+    :param predict_neutral_class: Whether we predict the neutral class
+    :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param model_folder: The folder where the results will be saved
+    :return: pred_raw_emo, pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
+    """
 
     true_sc_save_name = "true_scores_all"
     true_sc_coa_save_name = "true_scores_coarse"
@@ -106,7 +121,23 @@ def compute_true_labels(y_test, model_folder, predict_neutral_class):
         return true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom
 
 
-def compute_pred_labels(pred_raw, parameters_name, true_scores_all, model_folder, predict_neutral_class):
+def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, parameters_name, model_folder):
+    """
+    Compute the prediction labels (all arrays of shape (test_size, 6))
+    pred_raw_emo: Raw presence score prediction given by the model
+    pred_scores_all: Closest predicted score among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
+    pred_scores_coa: Closest predicted score among [0, 1, 2, 3]
+    pred_classes_pres: Emotions present predicted by the model (default threshold: presence score > 0)
+    pred_classes_dom: Dominant emotions predicted by the model (highest presence score)
+
+
+    :param pred_raw: array of shape (test_size, 7) predicting the presence score of the 6 emotions
+    :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database)
+    :param predict_neutral_class: Whether we predict the neutral class
+    :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param model_folder: The folder where the results will be saved
+    :return: pred_raw_emo, pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
+    """
 
     pred_sc_save_name = "pred_scores_all_{}".format(parameters_name)
     pred_sc_coa_save_name = "pred_scores_coarse_{}".format(parameters_name)
@@ -134,14 +165,23 @@ def compute_pred_labels(pred_raw, parameters_name, true_scores_all, model_folder
     return pred_raw_emo, pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
 
-def model_prediction(model, test_dataset, y_test, parameters_name, model_folder):
+def model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder):
+    """
+    Return the predictions of the model on test dataset.
+
+    :param model: The model to evaluate
+    :param test_dataset: The TensorFlow dataset for test set
+    :param num_test_samples: Number of test samples
+    :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param model_folder: The folder where the result will be saved
+    :return: pred_raw: array giving the predictions of the model on test dataset.
+    """
 
     print("\n\n================================= Model Prediction ===========================================")
     pred_raw_save_name = "pred_raw_{}".format(parameters_name)
 
     # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
-        num_test_samples = len(y_test)
         pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)  # (4654, 7)
         save_with_pickle(pred_raw, pred_raw_save_name, model_folder)
     else:
@@ -151,6 +191,14 @@ def model_prediction(model, test_dataset, y_test, parameters_name, model_folder)
 
 
 def compute_loss_value(model, test_dataset, loss_function):
+    """
+    Return the loss function value of the model on test dataset.
+
+    :param model: The model to evaluate
+    :param test_dataset: The TensorFlow dataset for test set
+    :param loss_function: Name of the loss function
+    :return: The loss function value
+    """
 
     print("\n\n================================= Model Evaluation ===========================================")
 
@@ -161,6 +209,14 @@ def compute_loss_value(model, test_dataset, loss_function):
 
 
 def get_regression_metrics(true_scores_all, pred_raw_emo, round_decimals):
+    """
+    Compute regression metrics: mean absolute error and mean squared error
+
+    :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database)
+    :param pred_raw_emo: array of shape (test_size, 6) predicting the presence score of the 6 emotions
+    :param round_decimals: number of decimals to be rounded for metrics
+    :return: List of classification metrics
+    """
 
     mae = round(mean_absolute_error(true_scores_all, pred_raw_emo), round_decimals)
     mse = round(mean_squared_error(true_scores_all, pred_raw_emo), round_decimals)
@@ -181,7 +237,7 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
     :param pred_classes: binary array of predictions, shape (test_size, num_classes) (num_classes = 7 if with neutral class, else 6)
     :param num_classes: number of classes (7 with neutral class, else 6)
     :param round_decimals: number of decimals to be rounded for metrics
-    :return:
+    :return: List of classification metrics
     """
 
     acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
@@ -255,6 +311,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     x_test = test_list[0]  # each element of shape (29, 409)
     y_test = test_list[1]  # each element of shape (1, 7)
     seg_test = test_list[2]
+    num_test_samples = len(y_test)
 
     # Create TensorFlow test dataset for model prediction and evaluation
     with_fixed_length = (fixed_num_steps > 0)
@@ -266,10 +323,10 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                                                                                 predict_neutral_class)
 
     # Predicted labels
-    pred_raw = model_prediction(model, test_dataset, y_test, parameters_name, model_folder)
+    pred_raw = model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder)
     pred_raw_emo, pred_scores, pred_scores_coa, \
-    pred_classes_pres, pred_classes_dom = compute_pred_labels(pred_raw, parameters_name, true_scores_all, model_folder,
-                                                              predict_neutral_class)
+    pred_classes_pres, pred_classes_dom = compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class,
+                                                              parameters_name, model_folder)
 
     # Confusion matrix (binary classification: whether an emotion is present or not)
     num_classes = true_classes_pres.shape[1]
