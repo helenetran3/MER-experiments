@@ -68,6 +68,8 @@ def get_dataset_from_sdk(pickle_name_dataset, align_to_text, append_label_to_dat
 
     # Create pickle_files folder
     pickle_folder = os.path.join('cmu_mosei', 'pickle_files')
+    if not os.path.isdir('cmu_mosei'):
+        os.mkdir('cmu_mosei')
     if not os.path.isdir(pickle_folder):
         os.mkdir(pickle_folder)
 

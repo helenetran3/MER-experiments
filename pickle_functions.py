@@ -57,7 +57,7 @@ def load_from_pickle(pickle_name, pickle_folder):
 
 def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, metrics_regression, metrics_score_coa,
-                             metrics_presence, metrics_dominant, predict_neutral_class):
+                             metrics_presence, metrics_dominant, predict_neutral_class, threshold_emo_pres):
     """
     Save results of a single model to a csv file.
 
@@ -74,6 +74,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     :param metrics_presence: List of metrics for detecting the presence/absence of an emotion
     :param metrics_dominant: List of metrics for detecting the dominant emotion(s)
     :param predict_neutral_class: Whether we predict the neutral class
+    :param threshold_emo_pres: set the threshold at which emotions are considered to be present. Must be between 0 and 3
     :return: One-line results added to the csv file.
     """
 
@@ -97,7 +98,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     # Create filenames
     csv_path_regression = os.path.join('models', model_name, 'csv', "regression.csv")
     csv_path_score_coa = os.path.join('models', model_name, 'csv', "classification_score_coarse.csv")
-    csv_path_presence = os.path.join('models', model_name, 'csv', "classification_presence.csv")
+    csv_path_presence = os.path.join('models', model_name, 'csv', "classification_presence_thres_{}.csv".format(threshold_emo_pres))
     csv_path_dominant = os.path.join('models', model_name, 'csv', "classification_dominant.csv")
 
     # Create headers for metrics of each emotion

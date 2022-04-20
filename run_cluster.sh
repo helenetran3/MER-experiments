@@ -31,6 +31,7 @@ python3 main.py \
 --patience 1 \
 --learning_rate 0.001 \
 --loss_function mean_absolute_error \
+--threshold_emo_present 0 \
 --round_decimals 3 \
 --predict_neutral_class
 #--with_custom_split \
