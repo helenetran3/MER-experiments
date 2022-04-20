@@ -71,10 +71,10 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     :param loss_function_val: Loss function obtained by the model
     :param metrics_regression: List of metrics for regression (w.r.t the presence scores)
     :param metrics_score_coa: List of metrics for classifying the presence score of each emotion
-    :param metrics_presence: List of metrics for detecting the presence/absence of an emotion
+    :param metrics_presence: T lists of lists of metrics for detecting the presence/absence of an emotion (T is the number of thresholds set)
     :param metrics_dominant: List of metrics for detecting the dominant emotion(s)
     :param predict_neutral_class: Whether we predict the neutral class
-    :param threshold_emo_pres: set the threshold at which emotions are considered to be present. Must be between 0 and 3
+    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :return: One-line results added to the csv file.
     """
 
@@ -98,24 +98,27 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     # Create filenames
     csv_path_regression = os.path.join('models', model_name, 'csv', "regression.csv")
     csv_path_score_coa = os.path.join('models', model_name, 'csv', "classification_score_coarse.csv")
-    csv_path_presence = os.path.join('models', model_name, 'csv', "classification_presence_thres_{}.csv".format(threshold_emo_pres))
+    csv_path_presence = [os.path.join('models', model_name, 'csv', "classification_presence_thres_{}.csv".format(thres))
+                         for thres in threshold_emo_pres]
     csv_path_dominant = os.path.join('models', model_name, 'csv', "classification_dominant.csv")
 
     # Create headers for metrics of each emotion
-    metrics = ['f1', 'rec', 'prec', 'roc_auc']
+    metrics_emo_pres = ['f1', 'rec', 'prec']
+    metrics_emo_all = metrics_emo_pres + ['roc_auc']
     emotions = ['happy', 'sad', 'anger', 'surprise', 'disgust', 'fear']
     if predict_neutral_class:
         emotions.append('neutral')
-    header_score_coa_per_emotion = ['sc_coa_{}_{}'.format(m, e) for m in metrics for e in emotions]
-    header_presence_per_emotion = ['pres_{}_{}'.format(m, e) for m in metrics for e in emotions]
-    header_dominant_per_emotion = ['dom_{}_{}'.format(m, e) for m in metrics for e in emotions]
+    header_score_coa_per_emotion = ['sc_coa_{}_{}'.format(m, e) for m in metrics_emo_all for e in emotions]
+    header_presence_per_emotion = ['pres_{}_{}'.format(m, e) for m in metrics_emo_pres for e in emotions]
+    header_dominant_per_emotion = ['dom_{}_{}'.format(m, e) for m in metrics_emo_all for e in emotions]
 
     # Create headers for global metrics
-    metrics_overall = ['acc', 'f1_unweighted', 'f1_weighted', 'rec_unweighted', 'rec_weighted', 'prec_unweighted', 
-                       'prec_weighted', 'roc_auc_unweighted', 'roc_auc_weighted']
-    header_score_coa_overall = ['sc_coa_{}'.format(m) for m in metrics_overall]
-    header_presence_overall = ['pres_{}'.format(m) for m in metrics_overall]
-    header_dominant_overall = ['dom_{}'.format(m) for m in metrics_overall]
+    metrics_overall_pres = ['acc', 'f1_unweighted', 'f1_weighted', 'rec_unweighted', 'rec_weighted', 'prec_unweighted',
+                       '    prec_weighted']
+    metrics_overall_all = metrics_overall_pres + ['roc_auc_unweighted', 'roc_auc_weighted']
+    header_score_coa_overall = ['sc_coa_{}'.format(m) for m in metrics_overall_all]
+    header_presence_overall = ['pres_{}'.format(m) for m in metrics_overall_pres]
+    header_dominant_overall = ['dom_{}'.format(m) for m in metrics_overall_all]
 
     # Create the whole header for each csv file
     header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', 'with_neutral_class',
@@ -130,7 +133,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
                   loss_function_val]
     data_regression = data_param + metrics_regression
     data_score_coa = data_param + metrics_score_coa
-    data_presence = data_param + metrics_presence
+    data_presence = [data_param + mp for mp in metrics_presence]
     data_dominant = data_param + metrics_dominant
 
     # print(len(header_regression), len(data_regression))
@@ -141,6 +144,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     # Write in csv files
     write_csv(csv_path_regression, header_regression, data_regression)
     write_csv(csv_path_score_coa, header_score_coa, data_score_coa)
-    write_csv(csv_path_presence, header_presence, data_presence)
+    for path, data in zip(csv_path_presence, data_presence):
+        write_csv(path, header_presence, data)
     write_csv(csv_path_dominant, header_dominant, data_dominant)
 

@@ -58,57 +58,76 @@ def get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, coarse=
 def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo_pres, only_dominant=False):
     """
     Get the dominant emotion class(es) for each test segment based on the presence scores of emotions.
+    If only_dominant, return a binary array, else return a list of 7 binary arrays for the 7 thresholds [0, 0.5, 1, 1.5, 2, 2.5, 3].
     Column indexes: 0:happy, 1:sad, 2:anger, 3:surprise, 4:disgust, 5:fear, (6:neutral)
 
     :param score_array: array of shape (test_size,6) containing the presence score of 6 emotions
     :param with_neutral_class: whether we add a neutral class or not
-    :param threshold_emo_pres: set the threshold at which emotions are considered to be present. Must be between 0 and 3
+    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param only_dominant: if True, only keep dominant classes (else keep any emotion present)
     :return: Binary array of shape (test_size,7) if we add neutral class, else array of shape (test_size,6).
     """
 
-    list_emotions = []
-    test_size = score_array.shape[0]
+    def get_list_emotions_for_each_seg(score_array, test_size, with_neutral_class, only_dominant, thres):
+        list_emotions = []
 
-    if score_array.shape[1] != 6:
-        print("Make sure that the array of presence scores have 6 columns (for the 6 emotions).")
-
-    else:
         for seg_id in range(test_size):  # we check every segment
 
             score_seg = score_array[seg_id, :]
             max_score = max(score_seg)
 
-            if max_score == 0:  # neutral case
+            if max_score == 0:  # the current segment shows neutral (no emotions)
                 list_emotions.append([6]) if with_neutral_class else list_emotions.append([])
 
             else:  # there is at least one emotion
                 if only_dominant:
                     # the following takes the index(es) of the maximum value in the presence score vector of emotions
                     list_emotions.append([i for i, val in enumerate(score_seg) if val == max_score])
-                elif threshold_emo_pres == 3:
+                elif thres == 3:
                     list_emotions.append([i for i, val in enumerate(score_seg) if val == 3])
                 else:
-                    list_emotions.append([i for i, val in enumerate(score_seg) if val > threshold_emo_pres])
+                    list_emotions.append([i for i, val in enumerate(score_seg) if val > thres])
 
-        num_classes = 7 if with_neutral_class else 6
-        mlb = MultiLabelBinarizer(classes=list(range(num_classes)))
+        return list_emotions
+
+    test_size = score_array.shape[0]
+    num_classes = 7 if with_neutral_class else 6
+    mlb = MultiLabelBinarizer(classes=list(range(num_classes)))
+
+    if score_array.shape[1] != 6:
+        print("Make sure that the array of presence scores have 6 columns (for the 6 emotions).")
+
+    elif only_dominant:
+        list_emotions = get_list_emotions_for_each_seg(score_array, test_size, with_neutral_class,
+                                                       only_dominant=True, thres=None)
         bin_array_emotions = mlb.fit_transform(list_emotions)
 
         return bin_array_emotions
 
+    else:  # Emotions present
+        list_emotions_all_thresholds = []
+
+        for thres in threshold_emo_pres:
+            list_emotions_thres = get_list_emotions_for_each_seg(score_array, test_size, with_neutral_class,
+                                                                 only_dominant=False, thres=thres)
+            list_emotions_all_thresholds.append(list_emotions_thres)
+
+        list_bin_array_emotions = [mlb.fit_transform(l) for l in list_emotions_all_thresholds]
+
+        return list_bin_array_emotions
+
 
 def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, model_folder):
     """
-    Compute the true labels (all arrays of shape (test_size, 6))
+    Compute the true labels (all arrays of shape (test_size, 6), true_classes_pres is a list of arrays of this type)
     true_scores_coa: Closest true score among [0, 1, 2, 3]
-    true_classes_pres: Emotions truly present (default threshold: presence score > 0)
+    true_classes_pres: Emotions truly present (varying thresholds for presence score given by threshold_emo_pres)
     true_classes_dom: Emotions truly dominant (highest presence score)
 
     :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database).
            Possible values of true_scores_all: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     :param predict_neutral_class: Whether we predict the neutral class
-    :param threshold_emo_pres: set the threshold at which emotions are considered to be present. Must be between 0 and 3
+    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param model_folder: The folder where the results will be saved
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
@@ -127,6 +146,7 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
         true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres)
         true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                          only_dominant=True)
+
         save_with_pickle(true_classes_pres, "true_classes_pres", model_folder)
         save_with_pickle(true_classes_dom, "true_classes_dom", model_folder)
         # print("true_scores_coa[:10, :]:\n", true_scores_coa[:10, :])
@@ -143,7 +163,7 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
 
 def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, parameters_name, model_folder):
     """
-    Compute the prediction labels (all arrays of shape (test_size, 6))
+    Compute the prediction labels (all arrays of shape (test_size, 6), pred_classes_pres is a list of arrays of this type))
     pred_scores_all: Closest predicted score among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     pred_scores_coa: Closest predicted score among [0, 1, 2, 3]
     pred_classes_pres: Emotions present predicted by the model (default threshold: presence score > 0)
@@ -153,7 +173,7 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     :param pred_raw: array of shape (test_size, 7) predicting the presence score of the 6 emotions
     :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database)
     :param predict_neutral_class: Whether we predict the neutral class
-    :param threshold_emo_pres: set the threshold at which emotions are considered to be present. Must be between 0 and 3
+    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
     :param model_folder: The folder where the results will be saved
     :return: pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
@@ -161,7 +181,7 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
 
     pred_sc_save_name = "pred_scores_all_{}".format(parameters_name)
     pred_sc_coa_save_name = "pred_scores_coarse_{}".format(parameters_name)
-    pred_cl_pres_save_name = "pred_classes_pres_{}_thres_{}".format(parameters_name, threshold_emo_pres)
+    pred_cl_pres_save_name = "pred_classes_pres_{}".format(parameters_name)
     pred_cl_dom_save_name = "pred_classes_dom_{}".format(parameters_name)
 
     # Get presence scores from raw predictions
@@ -246,7 +266,7 @@ def get_regression_metrics(true_scores_all, pred_raw, round_decimals):
     return [mae, mse]
 
 
-def get_classification_metrics(true_classes, pred_classes, num_classes, round_decimals):
+def get_classification_metrics(true_classes, pred_classes, num_classes, round_decimals, thres=None):
     """
     Compute classification metrics.
      Accuracy
@@ -273,16 +293,22 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
     prec_weighted = round(precision_score(true_classes, pred_classes, average='weighted'), round_decimals)
     true_classes_bin = label_binarize(true_classes, classes=list(range(num_classes)))
     pred_classes_bin = label_binarize(pred_classes, classes=list(range(num_classes)))
-    roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
-    roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
-                          round_decimals)
-    roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
-                             round_decimals)
+    # Next block: Compute ROC AUC when NOT defining the presence/absence of an emotion (as this task creates error
+    # when no emotion has a presence score greater than the threshold - ROC AUC needs at least one positive sample)
+    if thres is None:
+        roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
+        roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
+                              round_decimals)
+        roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
+                                 round_decimals)
+        roc_auc_each_rounded = [round(val, round_decimals) for val in roc_auc_each]
 
     f1_each_rounded = [round(val, round_decimals) for val in f1_each]
     rec_each_rounded = [round(val, round_decimals) for val in rec_each]
     prec_each_rounded = [round(val, round_decimals) for val in prec_each]
-    roc_auc_each_rounded = [round(val, round_decimals) for val in roc_auc_each]
+
+    if thres is not None:
+        print('>>> Threshold:', thres)
 
     print("Multilabel Accuracy:", acc)
     print("F1 score (for each):", f1_each_rounded)
@@ -294,12 +320,17 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
     print("Precision (for each):", prec_each_rounded)
     print("Precision (unweighted mean):", prec_macro)
     print("Precision (weighted mean):", prec_weighted)
-    print("ROC AUC (for each):", roc_auc_each_rounded)
-    print("ROC AUC (unweighted mean):", roc_auc_macro)
-    print("ROC AUC (weighted mean):", roc_auc_weighted)
+    if thres is None:
+        print("ROC AUC (for each):", roc_auc_each_rounded)
+        print("ROC AUC (unweighted mean):", roc_auc_macro)
+        print("ROC AUC (weighted mean):", roc_auc_weighted)
 
-    res = [acc, f1_macro, f1_weighted, rec_macro, rec_weighted, prec_macro, prec_weighted, roc_auc_macro, roc_auc_weighted]
-    res = res + f1_each_rounded + rec_each_rounded + prec_each_rounded + roc_auc_each_rounded
+    res = [acc, f1_macro, f1_weighted, rec_macro, rec_weighted, prec_macro, prec_weighted]
+    if thres is None:
+        res = res + [roc_auc_macro, roc_auc_weighted] + f1_each_rounded + rec_each_rounded + prec_each_rounded + \
+              roc_auc_each_rounded
+    else:
+        res= res + f1_each_rounded + rec_each_rounded + prec_each_rounded
 
     return res
 
@@ -318,7 +349,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param loss_function: Loss function
     :param model_name: Name of the model currently tested
     :param predict_neutral_class: Whether we predict the neutral class
-    :param threshold_emo_pres: set the threshold at which emotions are considered to be present. Must be between 0 and 3
+    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param round_decimals: Number of decimals to be rounded for metrics
     """
 
@@ -355,27 +386,27 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                                                                             model_folder)
 
     # Confusion matrix (binary classification: whether an emotion is present or not)
-    num_classes = true_classes_pres.shape[1]
-    conf_matrix = multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, labels=list(range(num_classes)))
-    save_with_pickle(conf_matrix, 'conf_matrix_{}'.format(parameters_name), model_folder)
+    num_classes = true_classes_pres[0].shape[1] if type(true_classes_pres) is list else true_classes_pres.shape[1]
+    for i, thres in enumerate(threshold_emo_pres):
+        conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i], labels=list(range(num_classes)))
+        save_with_pickle(conf_matrix, 'conf_matrix_thres_{}_{}'.format(thres, parameters_name), model_folder)
 
     # Model evaluation
-    # loss_function_val = compute_loss_value(model, test_dataset, loss_function)
-    loss_function_val = 0.001
+    loss_function_val = compute_loss_value(model, test_dataset, loss_function)
+    # loss_function_val = 0.001  # For debugging
 
     # Regression metrics
     metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
 
-    ## TODO Quatre cas: les scores de présence par défaut, 4 scores de présence, présence ou absence d'une émotion et
-    ## TODO             classification de le ou les émotions dominantes -> utile pour l'ambiguité
     # Classification metrics
     print("\n------ Presence score for each emotion ------")
     metrics_score_coa = [-1]  # temporary
     # TODO Compute the classification metrics for coarse presence scores
     # metrics_score_coa = get_classification_metrics(true_scores_coa, pred_scores_coa, num_classes, round_decimals)
     print("\n------ Presence/absence of an emotion ------")
-    print("Threshold for presence score:", threshold_emo_pres)
-    metrics_presence = get_classification_metrics(true_classes_pres, pred_classes_pres, num_classes, round_decimals)
+    metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,
+                                                   round_decimals, thres)
+                        for i, thres in enumerate(threshold_emo_pres)]
     print("\n----- Prediction of a dominant emotion -----")
     metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
 

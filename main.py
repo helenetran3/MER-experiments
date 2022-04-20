@@ -44,8 +44,8 @@ parser.add_argument('-lf', '--loss_function', type=str,
                     help="Loss function")
 parser.add_argument('-nc', '--predict_neutral_class', action='store_true',
                     help="Predict neutral class.")
-parser.add_argument('-tp', '--threshold_emo_present', type=int, choices=range(4),
-                    help="Threshold at which emotions are considered to be present. Must be between 0 and 3.")
+parser.add_argument('-tp', '--threshold_emo_present', type=int, choices=range(4), nargs='+',
+                    help="Threshold at which emotions are considered to be present. Values must be between 0 and 3.")
 parser.add_argument('-rd', '--round_decimals', type=int,
                     help="Number of decimals to be rounded for metrics.")
 args = parser.parse_args()
