@@ -14,7 +14,8 @@ parser.add_argument('-t', '--align_to_text', action='store_true',
 parser.add_argument('-al', '--append_label_to_data', action='store_true',
                     help="Append annotations to the dataset.")
 parser.add_argument('-c', '--with_custom_split', action='store_true',
-                    help="Perform custom split on training and validation sets (for more details, cf. paper).")
+                    help="Perform custom split on training and validation sets (for more details, cf. Williams et al. "
+                         "(2018) paper).")
 parser.add_argument('-v', '--val_metric', type=str, choices=['loss', 'acc'],
                     help="Metric to monitor for validation set. Values: loss or acc.")
 parser.add_argument('-f', '--image_feature', type=str, choices=['facet', 'openface'],
@@ -44,8 +45,10 @@ parser.add_argument('-lf', '--loss_function', type=str,
                     help="Loss function")
 parser.add_argument('-nc', '--predict_neutral_class', action='store_true',
                     help="Predict neutral class.")
-parser.add_argument('-tp', '--threshold_emo_present', type=int, choices=range(4), nargs='+',
-                    help="Threshold at which emotions are considered to be present. Values must be between 0 and 3.")
+parser.add_argument('-tp', '--threshold_emo_present', type=float, nargs='+',
+                    help="Threshold at which emotions are considered to be present. Values must be between 0 and 3. "
+                         "Note that setting thresholds greater than 0 might lead to no positive true and predicted "
+                         "classes and skew classification metrics (F1, precision, recall).")
 parser.add_argument('-rd', '--round_decimals', type=int,
                     help="Number of decimals to be rounded for metrics.")
 args = parser.parse_args()

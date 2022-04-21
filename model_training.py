@@ -134,22 +134,26 @@ def train_model(train_list, valid_list, test_list,
     model.compile(loss=loss_function, optimizer=optimizer)
 
     print("\n\n============================== Training Parameters ===========================================")
+    print("\n>>> Dataset")
     print("Number training datapoints: {} ({:.2f}%)".format(num_train_samples, 100 * (num_train_samples / total_data)))
     print("Number validation datapoints: {} ({:.2f}%)".format(num_valid_samples, 100 * (num_valid_samples / total_data)))
     print("Number test datapoints: {} ({:.2f}%)".format(num_test_samples, 100 * (num_test_samples / total_data)))
-    print("Batch size:", batch_size)
-    print("Number epochs:", num_epochs)
+    print("\n>>> Model parameters")
+    print("Model name:", model_name)
     print("Fixed number of steps:", fixed_num_steps)
     print("Number layers:", num_layers)
     print("Number nodes for the penultimate dense layer:", num_nodes)
     print("Dropout rate:", dropout_rate)
     print("Final activation:", final_activ)
+    print("\n>>> Model training")
+    print("Batch size:", batch_size)
+    print("Number epochs:", num_epochs)
+    print("Patience:", patience)
     print("Learning rate:", learning_rate)
     print("Loss function:", loss_function)
     print("Metric to monitor on validation data:", val_metric)
-    print("Patience:", patience)
 
-    print("\n\n================================= Model Training =============================================")
+    print("\n\n================================= Model Training =============================================\n")
     history = model.fit(x=train_dataset,
                         epochs=num_epochs,
                         verbose=1,

@@ -83,10 +83,8 @@ def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo
                 if only_dominant:
                     # the following takes the index(es) of the maximum value in the presence score vector of emotions
                     list_emotions.append([i for i, val in enumerate(score_seg) if val == max_score])
-                elif thres == 3:
-                    list_emotions.append([i for i, val in enumerate(score_seg) if val == 3])
                 else:
-                    list_emotions.append([i for i, val in enumerate(score_seg) if val > thres])
+                    list_emotions.append([i for i, val in enumerate(score_seg) if val >= thres])
 
         return list_emotions
 
@@ -132,7 +130,6 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-
     if not pickle_file_exists("true_scores_coarse", model_folder):
 
         # Compute true presence scores: arrays of shape (4654, 7)
@@ -146,12 +143,8 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
         true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres)
         true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                          only_dominant=True)
-
         save_with_pickle(true_classes_pres, "true_classes_pres", model_folder)
         save_with_pickle(true_classes_dom, "true_classes_dom", model_folder)
-        # print("true_scores_coa[:10, :]:\n", true_scores_coa[:10, :])
-        # print("true_classes_pres[:10, :]:\n", true_classes_pres[:10, :])
-        # print("true_classes_dom[:10, :]:\n", true_classes_dom[:10, :])
 
     else:
         true_scores_coa = load_from_pickle("true_scores_coarse", model_folder)
@@ -168,7 +161,6 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     pred_scores_coa: Closest predicted score among [0, 1, 2, 3]
     pred_classes_pres: Emotions present predicted by the model (default threshold: presence score > 0)
     pred_classes_dom: Dominant emotions predicted by the model (highest presence score)
-
 
     :param pred_raw: array of shape (test_size, 7) predicting the presence score of the 6 emotions
     :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database)
@@ -196,11 +188,6 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
                                                      only_dominant=True)
     save_with_pickle(pred_classes_pres, pred_cl_pres_save_name, model_folder)
     save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, model_folder)
-    # print("pred_raw[:10, :]:\n", pred_raw[:10, :])  # For debugging
-    # print("pred_scores_all[:10, :]:\n", pred_scores_all[:10, :])
-    # print("pred_scores_coa[:10, :]:\n", pred_scores_coa[:10, :])
-    # print("pred_classes_pres[:10, :]:\n", pred_classes_pres[:10, :])
-    # print("pred_classes_dom[:10, :]:\n", pred_classes_dom[:10, :])
 
     return pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
@@ -217,11 +204,11 @@ def model_prediction(model, test_dataset, num_test_samples, parameters_name, mod
     :return: pred_raw: array giving the predictions of the model on test dataset.
     """
 
-    print("\n\n================================= Model Prediction ===========================================")
     pred_raw_save_name = "pred_raw_{}".format(parameters_name)
 
     # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
+        print("\n\n================================= Model Prediction ===========================================\n")
         pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)  # (4654, 7)
         pred_raw = pred_raw[:, 1:]  # TODO Reminder: Remove
         save_with_pickle(pred_raw, pred_raw_save_name, model_folder)
@@ -231,19 +218,21 @@ def model_prediction(model, test_dataset, num_test_samples, parameters_name, mod
     return pred_raw
 
 
-def compute_loss_value(model, test_dataset, loss_function):
+def compute_loss_value(model, test_dataset, loss_function, round_decimals):
     """
     Return the loss function value of the model on test dataset.
 
     :param model: The model to evaluate
     :param test_dataset: The TensorFlow dataset for test set
     :param loss_function: Name of the loss function
+    :param round_decimals: number of decimals to be rounded for metrics
     :return: The loss function value
     """
 
-    print("\n\n================================= Model Evaluation ===========================================")
+    print("\n\n================================= Model Evaluation ===========================================\n")
 
     loss_function_val = model.evaluate(test_dataset, verbose=1)
+    loss_function_val = round(loss_function_val, round_decimals)
     print("Loss function ({}): {}".format(loss_function, loss_function_val))
 
     return loss_function_val
@@ -308,7 +297,7 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
     prec_each_rounded = [round(val, round_decimals) for val in prec_each]
 
     if thres is not None:
-        print('>>> Threshold:', thres)
+        print('\n>>> Threshold:', thres)
 
     print("Multilabel Accuracy:", acc)
     print("F1 score (for each):", f1_each_rounded)
@@ -324,13 +313,14 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
         print("ROC AUC (for each):", roc_auc_each_rounded)
         print("ROC AUC (unweighted mean):", roc_auc_macro)
         print("ROC AUC (weighted mean):", roc_auc_weighted)
+    print("\n")
 
     res = [acc, f1_macro, f1_weighted, rec_macro, rec_weighted, prec_macro, prec_weighted]
     if thres is None:
         res = res + [roc_auc_macro, roc_auc_weighted] + f1_each_rounded + rec_each_rounded + prec_each_rounded + \
               roc_auc_each_rounded
     else:
-        res= res + f1_each_rounded + rec_each_rounded + prec_each_rounded
+        res = res + f1_each_rounded + rec_each_rounded + prec_each_rounded
 
     return res
 
@@ -388,18 +378,18 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Confusion matrix (binary classification: whether an emotion is present or not)
     num_classes = true_classes_pres[0].shape[1] if type(true_classes_pres) is list else true_classes_pres.shape[1]
     for i, thres in enumerate(threshold_emo_pres):
-        conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i], labels=list(range(num_classes)))
+        conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i],
+                                                  labels=list(range(num_classes)))
         save_with_pickle(conf_matrix, 'conf_matrix_thres_{}_{}'.format(thres, parameters_name), model_folder)
 
     # Model evaluation
-    loss_function_val = compute_loss_value(model, test_dataset, loss_function)
-    # loss_function_val = 0.001  # For debugging
+    loss_function_val = compute_loss_value(model, test_dataset, loss_function, round_decimals)
 
     # Regression metrics
     metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
 
     # Classification metrics
-    print("\n------ Presence score for each emotion ------")
+    print("\n----- Presence score for each emotion ------")
     metrics_score_coa = [-1]  # temporary
     # TODO Compute the classification metrics for coarse presence scores
     # metrics_score_coa = get_classification_metrics(true_scores_coa, pred_scores_coa, num_classes, round_decimals)

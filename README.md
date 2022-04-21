@@ -81,60 +81,68 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
    2. **Running main.py in the command line:**
 
     ```commandline
-      usage: main.py [-h] [-df DATASET_FOLDER] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD]
-               [-pf PICKLE_FOLDER] [-t] [-al] [-c] [-v {loss,acc}] [-f {facet,openface}]
-               [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-l {1,2,3}] [-n NUM_NODES] [-d DROPOUT_RATE]
-               [-a FINAL_ACTIV] [-mf MODEL_FOLDER] [-mn MODEL_NAME] [-cf CSV_FOLDER] [-cn CSV_NAME]
-               [-e NUM_EPOCHS] [-p PATIENCE] [-lr LEARNING_RATE] [-lf LOSS_FUNCTION]
+      usage: main.py [-h] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD] [-t] [-al] [-c]
+               [-v {loss,acc}] [-f {facet,openface}] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS]
+               [-l {1,2,3}] [-n NUM_NODES] [-d DROPOUT_RATE] [-a FINAL_ACTIV]
+               [-mn MODEL_NAME] [-e NUM_EPOCHS] [-p PATIENCE] [-lr LEARNING_RATE]
+               [-lf LOSS_FUNCTION] [-nc]
+               [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
                [-rd ROUND_DECIMALS]
 
-      SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.
-      
-      optional arguments:
-        -h, --help            show this help message and exit
-        -pnd PICKLE_NAME_DATASET, --pickle_name_dataset PICKLE_NAME_DATASET
-                              Name of the pickle object that will contain the CMU-MOSEI mmdataset.
-        -pnf PICKLE_NAME_FOLD, --pickle_name_fold PICKLE_NAME_FOLD
-                              Name of the pickle object that will contain the training, validation 
-                              and test folds.
-        -t, --align_to_text   Data will be aligned to the textual modality.
-        -al, --append_label_to_data
-                              Append annotations to the dataset.
-        -c, --with_custom_split
-                              Perform custom split on training and validation sets (for Williams 
-                              et al. (2018) paper).
-        -v {loss,acc}, --val_metric {loss,acc}
-                              Metric to monitor for validation set. Values: loss or acc.
-        -f {facet,openface}, --image_feature {facet,openface}
-                              Image features. Values: facet or openface.
-        -b BATCH_SIZE, --batch_size BATCH_SIZE
-                              Batch size
-        -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
-                              Number of steps to fix for all sequences. Set to 0 if you want to 
-                              keep the original number of steps.
-        -l {1,2,3}, --num_layers {1,2,3}
-                              Number of bidirectional layers. Values between 1 and 3.
-        -n NUM_NODES, --num_nodes NUM_NODES
-                              Number of nodes in the penultimate dense layer.
-        -d DROPOUT_RATE, --dropout_rate DROPOUT_RATE
-                              Dropout rate
-        -a FINAL_ACTIV, --final_activ FINAL_ACTIV
-                              Activation function of the final layer.
-        -mf MODEL_FOLDER, --model_folder MODEL_FOLDER
-                              Name of the directory where the models will be saved.
-        -mn MODEL_NAME, --model_name MODEL_NAME
-                              Name of the model currently tested
-        -e NUM_EPOCHS, --num_epochs NUM_EPOCHS
-                              Maximum number of epochs
-        -p PATIENCE, --patience PATIENCE
-                              Number of epochs with no improvement after which the training will 
-                              be stopped.
-        -lr LEARNING_RATE, --learning_rate LEARNING_RATE
-                              Learning rate
-        -lf LOSS_FUNCTION, --loss_function LOSS_FUNCTION
-                              Loss function
-        -rd ROUND_DECIMALS, --round_decimals ROUND_DECIMALS
-                              Number of decimals to be rounded for metrics.
+    SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      -pnd PICKLE_NAME_DATASET, --pickle_name_dataset PICKLE_NAME_DATASET
+                            Name of the pickle object that will contain the CMU-MOSEI
+                            mmdataset.
+      -pnf PICKLE_NAME_FOLD, --pickle_name_fold PICKLE_NAME_FOLD
+                            Name of the pickle object that will contain the training,
+                            validation and test folds.
+      -t, --align_to_text   Data will be aligned to the textual modality.
+      -al, --append_label_to_data
+                            Append annotations to the dataset.
+      -c, --with_custom_split
+                            Perform custom split on training and validation sets (for more
+                            details, cf. Williams et al. (2018) paper).
+      -v {loss,acc}, --val_metric {loss,acc}
+                            Metric to monitor for validation set. Values: loss or acc.
+      -f {facet,openface}, --image_feature {facet,openface}
+                            Image features. Values: facet or openface.
+      -b BATCH_SIZE, --batch_size BATCH_SIZE
+                            Batch size
+      -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
+                            Number of steps to fix for all sequences. Set to 0 if you want to
+                            keep the original number of steps.
+      -l {1,2,3}, --num_layers {1,2,3}
+                            Number of bidirectional layers. Values between 1 and 3.
+      -n NUM_NODES, --num_nodes NUM_NODES
+                            Number of nodes in the penultimate dense layer.
+      -d DROPOUT_RATE, --dropout_rate DROPOUT_RATE
+                            Dropout rate
+      -a FINAL_ACTIV, --final_activ FINAL_ACTIV
+                            Activation function of the final layer.
+      -mn MODEL_NAME, --model_name MODEL_NAME
+                            Name of the model currently tested.
+      -e NUM_EPOCHS, --num_epochs NUM_EPOCHS
+                            Maximum number of epochs
+      -p PATIENCE, --patience PATIENCE
+                            Number of epochs with no improvement after which the training will
+                            be stopped.
+      -lr LEARNING_RATE, --learning_rate LEARNING_RATE
+                            Learning rate
+      -lf LOSS_FUNCTION, --loss_function LOSS_FUNCTION
+                            Loss function
+      -nc, --predict_neutral_class
+                            Predict neutral class.
+      -tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...], --threshold_emo_present 
+          THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]
+                            Threshold at which emotions are considered to be present. Values
+                            must be between 0 and 3. Note that setting thresholds greater than
+                            0 might lead to no positive true and predicted classes and skew
+                            classification metrics (F1, precision, recall).
+      -rd ROUND_DECIMALS, --round_decimals ROUND_DECIMALS
+                            Number of decimals to be rounded for metrics.
 
     ```
 
