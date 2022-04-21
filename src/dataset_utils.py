@@ -28,14 +28,9 @@ def download_dataset(pickle_name_dataset, align_to_text, append_label_to_data):
     :param append_label_to_data: whether we want data to align to the labels
     """
 
-    # Create pickle_files folder
-    pickle_folder = os.path.join('cmu_mosei', 'pickle_files')
-    if not os.path.isdir(pickle_folder):
-        os.mkdir(pickle_folder)
-
     # The next two lines for safety. The function should be called only if the pickle obj does not exist
-    if pickle_file_exists(pickle_name_dataset, pickle_folder):
-        print("{} already exists in {} folder. Please change the pickle name.".format(pickle_name_dataset, pickle_folder))
+    if pickle_file_exists(pickle_name_dataset, root_folder="cmu_mosei"):
+        print("{} already exists in {} folder. Please change the pickle name.".format(pickle_name_dataset, "cmu_mosei"))
 
     else:
         if os.path.exists('cmu_mosei/'):
@@ -53,7 +48,7 @@ def download_dataset(pickle_name_dataset, align_to_text, append_label_to_data):
             cmu_mosei.align('All Labels')
 
         # Save cmu_mosei mmdataset with pickle
-        save_with_pickle(cmu_mosei, pickle_name_dataset, pickle_folder)
+        save_with_pickle(cmu_mosei, pickle_name_dataset, root_folder="cmu_mosei")
 
 
 def get_dataset_from_sdk(pickle_name_dataset, align_to_text, append_label_to_data):
@@ -66,19 +61,12 @@ def get_dataset_from_sdk(pickle_name_dataset, align_to_text, append_label_to_dat
     :return: CMU-MOSEI mmdataset
     """
 
-    # Create pickle_files folder
-    pickle_folder = os.path.join('cmu_mosei', 'pickle_files')
-    if not os.path.isdir('cmu_mosei'):
-        os.mkdir('cmu_mosei')
-    if not os.path.isdir(pickle_folder):
-        os.mkdir(pickle_folder)
-
-    if not pickle_file_exists(pickle_name_dataset, pickle_folder):
+    if not pickle_file_exists(pickle_name_dataset, root_folder="cmu_mosei"):
         # Download from sdk and save with pickle
         download_dataset(pickle_name_dataset, align_to_text, append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
-    dataset = load_from_pickle(pickle_name_dataset, pickle_folder)
+    dataset = load_from_pickle(pickle_name_dataset, root_folder="cmu_mosei")
     print("CMU-MOSEI dataset loaded from pickle.")
     print("The existing computational sequences in dataset are: {}".format(list(dataset.keys())))
 
@@ -169,11 +157,6 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
      test_list = [x_test, y_test, seg_test]
     """
 
-    # Create pickle_files folder
-    pickle_folder = os.path.join('cmu_mosei', 'pickle_files')
-    if not os.path.isdir(pickle_folder):
-        os.mkdir(pickle_folder)
-
     # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
     EPS = 0
 
@@ -263,9 +246,9 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     test_res = [x_test, y_test, seg_test]
 
     # Save lists with pickle
-    save_with_pickle(train_res, pickle_name_fold + "_train", pickle_folder)
-    save_with_pickle(valid_res, pickle_name_fold + "_valid", pickle_folder)
-    save_with_pickle(test_res, pickle_name_fold + "_test", pickle_folder)
+    save_with_pickle(train_res, pickle_name_fold + "_train", root_folder="cmu_mosei")
+    save_with_pickle(valid_res, pickle_name_fold + "_valid", root_folder="cmu_mosei")
+    save_with_pickle(test_res, pickle_name_fold + "_test", root_folder="cmu_mosei")
 
     return train_res, valid_res, test_res
 

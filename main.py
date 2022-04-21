@@ -57,10 +57,10 @@ args = parser.parse_args()
 def main():
 
     # Get data for training, validation and test sets from pickle (split provided by the SDK)
-    if pickle_file_exists(args.pickle_name_fold + "_train", 'cmu_mosei/pickle_files/'):
-        train_list = load_from_pickle(args.pickle_name_fold + "_train", 'cmu_mosei/pickle_files/')
-        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", 'cmu_mosei/pickle_files/')
-        test_list = load_from_pickle(args.pickle_name_fold + "_test", 'cmu_mosei/pickle_files/')
+    if pickle_file_exists(args.pickle_name_fold + "_train", root_folder="cmu_mosei"):
+        train_list = load_from_pickle(args.pickle_name_fold + "_train", root_folder="cmu_mosei")
+        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", root_folder="cmu_mosei")
+        test_list = load_from_pickle(args.pickle_name_fold + "_test", root_folder="cmu_mosei")
 
     else:
         # Load CMU-MOSEI dataset

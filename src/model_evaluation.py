@@ -23,12 +23,12 @@ def create_true_scores_all(y_test, model_folder):
     :return: true_scores_all
     """
 
-    if not pickle_file_exists("true_scores_all", model_folder):
+    if not pickle_file_exists("true_scores_all", root_folder=model_folder):
         true_scores_all = np.reshape(np.array(y_test), (-1, 7))
         true_scores_all = true_scores_all[:, 1:]  # (4654, 6), removed the sentiment column
-        save_with_pickle(true_scores_all, "true_scores_all", model_folder)
+        save_with_pickle(true_scores_all, "true_scores_all", root_folder=model_folder)
     else:
-        true_scores_all = load_from_pickle("true_scores_all", model_folder)
+        true_scores_all = load_from_pickle("true_scores_all", root_folder=model_folder)
     return true_scores_all
 
 
@@ -131,26 +131,26 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-    if not pickle_file_exists("true_scores_coarse", model_folder):
+    if not pickle_file_exists("true_scores_coarse", root_folder=model_folder):
 
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
         # TODO remove sentiment prediction from model training and evaluation, and change the code consequently
         true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, coarse=True)
-        save_with_pickle(true_scores_coa, "true_scores_coarse", model_folder)
+        save_with_pickle(true_scores_coa, "true_scores_coarse", root_folder=model_folder)
 
         # Compute true classes: binary arrays of shape (4654, 6 or 7)
         true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres)
         true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                          only_dominant=True)
-        save_with_pickle(true_classes_pres, "true_classes_pres", model_folder)
-        save_with_pickle(true_classes_dom, "true_classes_dom", model_folder)
+        save_with_pickle(true_classes_pres, "true_classes_pres", root_folder=model_folder)
+        save_with_pickle(true_classes_dom, "true_classes_dom", root_folder=model_folder)
 
     else:
-        true_scores_coa = load_from_pickle("true_scores_coarse", model_folder)
-        true_classes_pres = load_from_pickle("true_classes_pres", model_folder)
-        true_classes_dom = load_from_pickle("true_classes_dom", model_folder)
+        true_scores_coa = load_from_pickle("true_scores_coarse", root_folder=model_folder)
+        true_classes_pres = load_from_pickle("true_classes_pres", root_folder=model_folder)
+        true_classes_dom = load_from_pickle("true_classes_dom", root_folder=model_folder)
 
     return true_scores_coa, true_classes_pres, true_classes_dom
 
@@ -160,7 +160,7 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     Compute the prediction labels (all arrays of shape (test_size, 6), pred_classes_pres is a list of arrays of this type))
     pred_scores_all: Closest predicted score among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     pred_scores_coa: Closest predicted score among [0, 1, 2, 3]
-    pred_classes_pres: Emotions present predicted by the model (default threshold: presence score > 0)
+    pred_classes_pres: Emotions present predicted by the model (varying thresholds for presence score given by threshold_emo_pres)
     pred_classes_dom: Dominant emotions predicted by the model (highest presence score)
 
     :param pred_raw: array of shape (test_size, 7) predicting the presence score of the 6 emotions
@@ -180,15 +180,15 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     # Get presence scores from raw predictions
     pred_scores_all = get_presence_score_from_finer_grained_val(pred_raw, true_scores_all)
     pred_scores_coa = get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, coarse=True)
-    save_with_pickle(pred_scores_all, pred_sc_save_name, model_folder)
-    save_with_pickle(pred_scores_coa, pred_sc_coa_save_name, model_folder)
+    save_with_pickle(pred_scores_all, pred_sc_save_name, root_folder=model_folder)
+    save_with_pickle(pred_scores_coa, pred_sc_coa_save_name, root_folder=model_folder)
 
     # Compute predicted classes from presence scores (useful for classification metrics including confusion matrix)
     pred_classes_pres = get_class_from_presence_score(pred_scores_all, predict_neutral_class, threshold_emo_pres)
     pred_classes_dom = get_class_from_presence_score(pred_scores_all, predict_neutral_class, threshold_emo_pres,
                                                      only_dominant=True)
-    save_with_pickle(pred_classes_pres, pred_cl_pres_save_name, model_folder)
-    save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, model_folder)
+    save_with_pickle(pred_classes_pres, pred_cl_pres_save_name, root_folder=model_folder)
+    save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, root_folder=model_folder)
 
     return pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
@@ -208,15 +208,36 @@ def model_prediction(model, test_dataset, num_test_samples, parameters_name, mod
     pred_raw_save_name = "pred_raw_{}".format(parameters_name)
 
     # Get raw score predictions from the model
-    if not pickle_file_exists(pred_raw_save_name, model_folder):  # perform prediction (for debugging)
+    if not pickle_file_exists(pred_raw_save_name, root_folder=model_folder):  # perform prediction (for debugging)
         print("\n\n================================= Model Prediction ===========================================\n")
         pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)  # (4654, 7)
         pred_raw = pred_raw[:, 1:]  # TODO Reminder: Remove
-        save_with_pickle(pred_raw, pred_raw_save_name, model_folder)
+        save_with_pickle(pred_raw, pred_raw_save_name, root_folder=model_folder)
     else:
-        pred_raw = load_from_pickle(pred_raw_save_name, model_folder)
+        pred_raw = load_from_pickle(pred_raw_save_name, root_folder=model_folder)
 
     return pred_raw
+
+
+def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, threshold_emo_pres, num_classes,
+                                        parameters_name, model_folder):
+    """
+    Compute the multilabel confusion matrix for each emotion (whether the emotion is present or not).
+    Pickle file generated.
+
+    :param true_classes_pres: List of arrays giving the emotions truly present (varying thresholds for presence score given by threshold_emo_pres)
+    :param pred_classes_pres: List of arrays giving the emotions present predicted by the model (varying thresholds)
+    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
+    :param num_classes: number of classes (7 with neutral class, else 6)
+    :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param model_folder: The folder where the results will be saved
+    :return:
+    """
+
+    for i, thres in enumerate(threshold_emo_pres):
+        conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i],
+                                                  labels=list(range(num_classes)))
+        save_with_pickle(conf_matrix, 'conf_matrix_t_{}_{}'.format(thres, parameters_name), root_folder=model_folder)
 
 
 def compute_loss_value(model, test_dataset, loss_function, round_decimals):
@@ -367,6 +388,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     true_scores_coa, true_classes_pres, true_classes_dom = compute_true_labels(true_scores_all,
                                                                                predict_neutral_class,
                                                                                threshold_emo_pres, model_folder)
+    num_classes = true_classes_dom.shape[1]
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder)
@@ -376,12 +398,9 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                                                                             parameters_name,
                                                                                             model_folder)
 
-    # Confusion matrix (binary classification: whether an emotion is present or not)
-    num_classes = true_classes_pres[0].shape[1] if type(true_classes_pres) is list else true_classes_pres.shape[1]
-    for i, thres in enumerate(threshold_emo_pres):
-        conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i],
-                                                  labels=list(range(num_classes)))
-        save_with_pickle(conf_matrix, 'conf_matrix_t_{}_{}'.format(thres, parameters_name), model_folder)
+    # Confusion matrix
+    compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, threshold_emo_pres, num_classes,
+                                        parameters_name, model_folder)
 
     # Model evaluation
     loss_function_val = compute_loss_value(model, test_dataset, loss_function, round_decimals)
