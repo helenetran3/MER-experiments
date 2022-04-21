@@ -102,7 +102,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     # Create filenames
     csv_path_regression = os.path.join('models_tested', model_name, 'csv', "regression.csv")
     csv_path_score_coa = os.path.join('models_tested', model_name, 'csv', "classification_score_coarse.csv")
-    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_thres_{}.csv".format(thres))
+    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_t_{}.csv".format(thres))
                          for thres in threshold_emo_pres]
     csv_path_dominant = os.path.join('models_tested', model_name, 'csv', "classification_dominant.csv")
 
@@ -118,7 +118,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
 
     # Create headers for global metrics
     metrics_overall_pres = ['acc', 'f1_unweighted', 'f1_weighted', 'rec_unweighted', 'rec_weighted', 'prec_unweighted',
-                       '    prec_weighted']
+                            'prec_weighted']
     metrics_overall_all = metrics_overall_pres + ['roc_auc_unweighted', 'roc_auc_weighted']
     header_score_coa_overall = ['sc_coa_{}'.format(m) for m in metrics_overall_all]
     header_presence_overall = ['pres_{}'.format(m) for m in metrics_overall_pres]
@@ -143,7 +143,8 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     # print(len(header_regression), len(data_regression))
     # print(len(header_score_coa), len(data_score_coa))
     # print(len(header_dominant), len(data_dominant))
-    # print(len(header_presence), len(data_presence))
+    # for i in range(len(metrics_presence)):
+    #     print(len(header_presence), len(data_presence[i]))
 
     # Write in csv files
     write_csv(csv_path_regression, header_regression, data_regression)

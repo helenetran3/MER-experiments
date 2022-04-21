@@ -85,7 +85,10 @@ def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo
                     # the following takes the index(es) of the maximum value in the presence score vector of emotions
                     list_emotions.append([i for i, val in enumerate(score_seg) if val == max_score])
                 else:
-                    list_emotions.append([i for i, val in enumerate(score_seg) if val >= thres])
+                    tmp = [i for i, val in enumerate(score_seg) if val > 0] if thres == 0 else \
+                        [i for i, val in enumerate(score_seg) if val >= thres]
+                    tmp = [6] if len(tmp) == 0 and with_neutral_class else tmp
+                    list_emotions.append(tmp)
 
         return list_emotions
 
@@ -193,6 +196,20 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     return pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
 
+def get_binary_arrays_from_scores_coa(scores_coa):
+
+    num_emotions = scores_coa.shape[1]
+
+    if num_emotions != 6:
+        print("Make sure that the array of presence scores have 6 columns (for the 6 emotions).")
+
+    else:
+        scores_for_each_emo = [scores_coa[:, i] for i in range(num_emotions)]
+        bin_arr_for_each_emo = [label_binarize(sc, classes=range(4)) for sc in scores_for_each_emo]
+
+        return bin_arr_for_each_emo
+
+
 def model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder):
     """
     Return the predictions of the model on test dataset.
@@ -275,6 +292,72 @@ def get_regression_metrics(true_scores_all, pred_raw, round_decimals):
     print("Mean absolute error:", mae)
     print("Mean squared error:", mse)
     return [mae, mse]
+
+
+def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round_decimals):
+    """
+    Return unweighted mean of all the classification metrics for the case of coarse scores.
+
+    :param true_scores_coa: Binary array of shape (test_size, 6) giving the true presence scores among [0, 1, 2, 3]
+    :param pred_scores_coa: Binary array of shape (test_size, 6) giving the predicted presence scores among [0, 1, 2, 3]
+    :param round_decimals: number of decimals to be rounded for metrics
+    :return: [f1_macro_uw_mean, f1_weighted_uw_mean, rec_macro_uw_mean, rec_weighted_uw_mean, prec_macro_uw_mean,
+              prec_weighted_uw_mean, roc_auc_macro_uw_mean, roc_auc_weighted_uw_mean]
+    """
+
+    true_scores_bin = get_binary_arrays_from_scores_coa(true_scores_coa)
+    pred_scores_bin = get_binary_arrays_from_scores_coa(pred_scores_coa)
+
+    # In this block, we go through all the emotions. Metrics are here given for each emotion.
+    # Imbalance in presence score [0, 1, 2, 3]. example for happy: [3048, 1210, 376, 20],
+    # hence we also calculate weighted metrics
+    f1_macro_emo = [f1_score(ts, ps, average='macro')
+                    for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+    f1_weighted_emo = [f1_score(ts, ps, average='weighted')
+                       for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+    rec_macro_emo = [recall_score(ts, ps, average='macro')
+                     for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+    rec_weighted_emo = [recall_score(ts, ps, average='weighted')
+                        for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+    prec_macro_emo = [precision_score(ts, ps, average='macro')
+                      for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+    prec_weighted_emo = [precision_score(ts, ps, average='weighted')
+                         for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+    # roc_auc_macro_emo = [roc_auc_score(ts, ps, average='macro')
+    #                      for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+    # roc_auc_weighted_emo = [roc_auc_score(ts, ps, average='weighted')
+    #                         for ts, ps in zip(true_scores_bin, pred_scores_bin)]
+
+    # Unweighted mean over the six emotions
+    # TODO: Weighted?
+    # TODO Accuracy?
+    f1_macro_uw_mean = round(np.mean(f1_macro_emo), round_decimals)
+    f1_weighted_uw_mean = round(np.mean(f1_weighted_emo), round_decimals)
+    rec_macro_uw_mean = round(np.mean(rec_macro_emo), round_decimals)
+    rec_weighted_uw_mean = round(np.mean(rec_weighted_emo), round_decimals)
+    prec_macro_uw_mean = round(np.mean(prec_macro_emo), round_decimals)
+    prec_weighted_uw_mean = round(np.mean(prec_weighted_emo), round_decimals)
+    # roc_auc_macro_uw_mean = round(np.mean(roc_auc_macro_emo), round_decimals)
+    # roc_auc_weighted_uw_mean = round(np.mean(roc_auc_weighted_emo), round_decimals)
+    print("\n4 classes (presence scores) for each emotion class. "
+          "The following metrics all give the unweighted mean over the emotions and the brackets give the type "
+          "of mean over the presence scores.\n")
+    print("F1 score (weighted mean):", f1_macro_uw_mean)
+    print("F1 score (unweighted mean):", f1_weighted_uw_mean)
+    print("Recall (weighted mean):", rec_macro_uw_mean)
+    print("Recall (unweighted mean):", rec_weighted_uw_mean)
+    print("Precision (weighted mean):", prec_macro_uw_mean)
+    print("Precision (unweighted mean):", prec_weighted_uw_mean)
+    # print("ROC AUC (weighted mean):", roc_auc_macro_uw_mean)
+    # print("ROC AUC (unweighted mean):", roc_auc_weighted_uw_mean)
+
+    res = [f1_macro_uw_mean, f1_weighted_uw_mean, rec_macro_uw_mean, rec_weighted_uw_mean, prec_macro_uw_mean,
+            prec_weighted_uw_mean]  #, roc_auc_macro_uw_mean, roc_auc_weighted_uw_mean]
+
+    res = res + f1_macro_emo + f1_weighted_emo + rec_macro_emo + rec_weighted_emo + prec_macro_emo + prec_weighted_emo \
+          # + roc_auc_macro_emo + roc_auc_weighted_emo
+
+    return res
 
 
 def get_classification_metrics(true_classes, pred_classes, num_classes, round_decimals, thres=None):
@@ -398,6 +481,10 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                                                                             parameters_name,
                                                                                             model_folder)
 
+    # Transform sparse array of presence scores (values from 0 to 3) to a list of 6 binary arrays (one for each emotion)
+    true_scores_bin_array = get_binary_arrays_from_scores_coa(true_scores_coa)
+    pred_scores_bin_array = get_binary_arrays_from_scores_coa(pred_scores_coa)
+
     # Confusion matrix
     compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, threshold_emo_pres, num_classes,
                                         parameters_name, model_folder)
@@ -409,14 +496,13 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
 
     # Classification metrics
-    print("\n----- Presence score for each emotion ------")
-    metrics_score_coa = [-1]  # temporary
-    # TODO Compute the classification metrics for coarse presence scores
-    # metrics_score_coa = get_classification_metrics(true_scores_coa, pred_scores_coa, num_classes, round_decimals)
+    print("\n----- Presence score for each emotion ------\n")
+    metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round_decimals)
+
     print("\n------ Presence/absence of an emotion ------")
     metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,
                                                    round_decimals, thres) for i, thres in enumerate(threshold_emo_pres)]
-    print("\n----- Prediction of a dominant emotion -----")
+    print("\n----- Prediction of a dominant emotion -----\n")
     metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
 
     save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
