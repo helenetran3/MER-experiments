@@ -2,13 +2,14 @@ import os
 import numpy as np
 
 from tensorflow.keras.models import load_model
-from pickle_functions import save_with_pickle, pickle_file_exists, load_from_pickle, save_results_in_csv_file
-from dataset_utils import get_tf_dataset
+from src.pickle_functions import save_with_pickle, pickle_file_exists, load_from_pickle, save_results_in_csv_file
+from src.dataset_utils import get_tf_dataset
 
 from sklearn.preprocessing import LabelEncoder, label_binarize, MultiLabelBinarizer
-from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
+from sklearn.metrics import multilabel_confusion_matrix
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
+
 
 def create_true_scores_all(y_test, model_folder):
     """
@@ -346,7 +347,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Load best model
     parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
     model_save_name = "model_{}.h5".format(parameters_name)
-    model_folder = os.path.join('models', model_name)
+    model_folder = os.path.join('models_tested', model_name)
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
 
@@ -380,7 +381,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     for i, thres in enumerate(threshold_emo_pres):
         conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i],
                                                   labels=list(range(num_classes)))
-        save_with_pickle(conf_matrix, 'conf_matrix_thres_{}_{}'.format(thres, parameters_name), model_folder)
+        save_with_pickle(conf_matrix, 'conf_matrix_t_{}_{}'.format(thres, parameters_name), model_folder)
 
     # Model evaluation
     loss_function_val = compute_loss_value(model, test_dataset, loss_function, round_decimals)
@@ -395,8 +396,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # metrics_score_coa = get_classification_metrics(true_scores_coa, pred_scores_coa, num_classes, round_decimals)
     print("\n------ Presence/absence of an emotion ------")
     metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,
-                                                   round_decimals, thres)
-                        for i, thres in enumerate(threshold_emo_pres)]
+                                                   round_decimals, thres) for i, thres in enumerate(threshold_emo_pres)]
     print("\n----- Prediction of a dominant emotion -----")
     metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
 

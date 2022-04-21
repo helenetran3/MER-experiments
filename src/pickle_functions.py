@@ -91,16 +91,16 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
                 writer.writerow(data_to_save)
 
     # Create csv folder
-    model_csv_folder = os.path.join('models', model_name, 'csv')
+    model_csv_folder = os.path.join('models_tested', model_name, 'csv')
     if not os.path.isdir(model_csv_folder):
         os.mkdir(model_csv_folder)
 
     # Create filenames
-    csv_path_regression = os.path.join('models', model_name, 'csv', "regression.csv")
-    csv_path_score_coa = os.path.join('models', model_name, 'csv', "classification_score_coarse.csv")
-    csv_path_presence = [os.path.join('models', model_name, 'csv', "classification_presence_thres_{}.csv".format(thres))
+    csv_path_regression = os.path.join('models_tested', model_name, 'csv', "regression.csv")
+    csv_path_score_coa = os.path.join('models_tested', model_name, 'csv', "classification_score_coarse.csv")
+    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_thres_{}.csv".format(thres))
                          for thres in threshold_emo_pres]
-    csv_path_dominant = os.path.join('models', model_name, 'csv', "classification_dominant.csv")
+    csv_path_dominant = os.path.join('models_tested', model_name, 'csv', "classification_dominant.csv")
 
     # Create headers for metrics of each emotion
     metrics_emo_pres = ['f1', 'rec', 'prec']

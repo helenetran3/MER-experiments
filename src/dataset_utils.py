@@ -3,7 +3,7 @@ import re
 import numpy as np
 import tensorflow as tf
 from mmsdk import mmdatasdk
-from pickle_functions import pickle_file_exists, save_with_pickle, load_from_pickle
+from src.pickle_functions import pickle_file_exists, save_with_pickle, load_from_pickle
 
 
 # CMU-MOSEI DATA DOWNLOAD FUNCTIONS

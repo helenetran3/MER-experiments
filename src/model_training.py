@@ -1,6 +1,6 @@
 import os.path
 
-from dataset_utils import get_tf_dataset
+from src.dataset_utils import get_tf_dataset
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
@@ -102,9 +102,9 @@ def train_model(train_list, valid_list, test_list,
                                    train_mode=True)
 
     # Parameters to save model
-    model_folder = os.path.join('models', model_name)
-    if not os.path.isdir('models'):
-        os.mkdir('models')
+    model_folder = os.path.join('models_tested', model_name)
+    if not os.path.isdir('models_tested'):
+        os.mkdir('models_tested')
     if not os.path.isdir(model_folder):
         os.mkdir(model_folder)
     model_save_name = "model_l_{}_n_{}_d_{}_b_{}_s_{}.h5".format(num_layers, num_nodes, dropout_rate,
