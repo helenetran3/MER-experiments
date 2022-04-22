@@ -5,8 +5,7 @@ from tensorflow.keras.models import load_model
 from src.pickle_functions import pickle_file_exists, save_with_pickle, load_from_pickle
 from src.csv_functions import save_results_in_csv_file
 from src.dataset_utils import get_tf_dataset
-from src.model_metrics import get_regression_metrics, get_classification_metrics_score_coa, get_classification_metrics
-from src.model_metrics import compute_multilabel_confusion_matrix, compute_loss_value
+from src.model_metrics import get_and_print_all_metrics, compute_multilabel_confusion_matrix, compute_loss_value
 
 from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 
@@ -167,8 +166,9 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     pred_classes_pres: Emotions present predicted by the model (varying thresholds for presence score given by threshold_emo_pres)
     pred_classes_dom: Dominant emotions predicted by the model (highest presence score)
 
-    :param pred_raw: array of shape (test_size, 7) predicting the presence score of the 6 emotions
-    :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database)
+    :param pred_raw: array of shape (test_size, num_classes) predicting the presence score of the emotions
+    :param true_scores_all: array of shape (test size, num_classes) giving the true scores for the emotions (given by
+    the database)
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
@@ -264,19 +264,14 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     # True labels
     true_scores_all = create_array_true_scores(y_test, num_classes, model_folder)
-    true_scores_coa, true_classes_pres, true_classes_dom = compute_true_labels(true_scores_all,
-                                                                               predict_neutral_class,
-                                                                               threshold_emo_pres, num_classes,
-                                                                               model_folder)
+    true_scores_coa, true_classes_pres, true_classes_dom = \
+        compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, model_folder)
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder)
-    pred_scores, pred_scores_coa, pred_classes_pres, pred_classes_dom = compute_pred_labels(pred_raw, true_scores_all,
-                                                                                            predict_neutral_class,
-                                                                                            threshold_emo_pres,
-                                                                                            parameters_name,
-                                                                                            num_classes,
-                                                                                            model_folder)
+    pred_scores, pred_scores_coa, pred_classes_pres, pred_classes_dom = \
+        compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, parameters_name,
+                            num_classes, model_folder)
 
     # Confusion matrix
     compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, threshold_emo_pres, num_classes,
@@ -285,26 +280,13 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Model evaluation
     loss_function_val = compute_loss_value(model, test_dataset, loss_function, round_decimals)
 
-    print("\n\n")
-    print("In the following, all the metrics displayed for each emotion are in this order: sentiment, happy, sad, "
-          "anger, surprise, disgust, fear", end="")
-    print(", neutral.\n") if predict_neutral_class else print(".\n")
+    # Compute all metrics
+    metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
+        get_and_print_all_metrics(true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,
+                                  pred_raw, pred_scores_coa, pred_classes_pres, pred_classes_dom,
+                                  threshold_emo_pres, num_classes, predict_neutral_class, round_decimals)
 
-    # Regression metrics
-    print("\n------- Presence score estimation (regression) --------\n")
-    metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
-
-    # Classification metrics
-    print("\n------- Presence score classification [0,1,2,3] -------\n")
-    metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, num_classes,
-                                                             round_decimals)
-
-    print("\n------- Detecting the presence of emotions ------------")
-    metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,
-                                                   round_decimals, thres) for i, thres in enumerate(threshold_emo_pres)]
-    print("\n------- Predicting dominant emotions ------------------\n")
-    metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
-
+    # Save metrics in csv file
     save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, metrics_regression, metrics_score_coa, metrics_presence,
                              metrics_dominant, predict_neutral_class, threshold_emo_pres)

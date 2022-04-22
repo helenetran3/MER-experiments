@@ -225,7 +225,8 @@ def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, th
     Compute the multilabel confusion matrix for each emotion (whether the emotion is present or not).
     Pickle file generated.
 
-    :param true_classes_pres: List of arrays giving the emotions truly present (varying thresholds for presence score given by threshold_emo_pres)
+    :param true_classes_pres: List of arrays giving the emotions truly present (varying thresholds for presence score
+    given by threshold_emo_pres)
     :param pred_classes_pres: List of arrays giving the emotions present predicted by the model (varying thresholds)
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param num_classes: number of classes (7 with neutral class, else 6)
@@ -238,3 +239,50 @@ def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, th
         conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i],
                                                   labels=list(range(num_classes)))
         save_with_pickle(conf_matrix, 'conf_matrix_t_{}_{}'.format(thres, parameters_name), root_folder=model_folder)
+
+
+def get_and_print_all_metrics(true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,
+                              pred_raw, pred_scores_coa, pred_classes_pres, pred_classes_dom,
+                              threshold_emo_pres, num_classes, predict_neutral_class, round_decimals):
+    """
+    Compute metrics for four tasks: estimation of presence score (regression), classification of presence score among
+    [0, 1, 2, 3], binary classification for each emotion, and prediction of dominant classes (multilabel classification)
+
+    :param true_scores_all: array of shape (test_size, num_classes) giving the true presence score of the emotions
+    :param true_scores_coa: array of shape (test_size, num_classes) giving the true presence score among [0, 1, 2, 3]
+    :param true_classes_pres: list of binary arrays of shape (test_size, num_classes) giving the true presence of an
+    emotion (> threshold defined by threshold_emo_pres)
+    :param true_classes_dom: binary array of shape (test_size, num_classes) giving the truly dominant emotions
+    :param pred_raw: array of shape (test_size, num_classes) predicting the presence score of the emotions
+    :param pred_scores_coa: array of shape (test_size, num_classes) predicting the presence score among [0, 1, 2, 3]
+    :param pred_classes_pres: list of binary arrays of shape (test_size, num_classes) giving the predicted presence of
+    an emotion (> threshold defined by threshold_emo_pres)
+    :param pred_classes_dom: binary array of shape (test_size, num_classes) giving the predicted dominant emotions
+    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
+    :param num_classes: number of classes (7 with neutral class, else 6)
+    :param predict_neutral_class: Whether we predict the neutral class
+    :param round_decimals: Number of decimals to be rounded for metrics
+    :return: metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant
+    """
+
+    print("\n\n")
+    print("In the following, all the metrics displayed for each emotion are in this order: sentiment, happy, sad, "
+          "anger, surprise, disgust, fear", end="")
+    print(", neutral.\n") if predict_neutral_class else print(".\n")
+
+    # Regression metrics
+    print("\n------- Presence score estimation (regression) --------\n")
+    metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
+
+    # Classification metrics
+    print("\n------- Presence score classification [0,1,2,3] -------\n")
+    metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, num_classes,
+                                                             round_decimals)
+
+    print("\n------- Detecting the presence of emotions ------------")
+    metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,
+                                                   round_decimals, thres) for i, thres in enumerate(threshold_emo_pres)]
+    print("\n------- Predicting dominant emotions ------------------\n")
+    metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
+
+    return metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant
