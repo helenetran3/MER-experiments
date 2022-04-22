@@ -306,7 +306,7 @@ def update_folds(train_list, valid_list, test_list, pickle_name_fold, predict_se
             valid_list = keep_only_emotion_labels(valid_list, pickle_name_fold + "_valid_emo")
             test_list = keep_only_emotion_labels(test_list, pickle_name_fold + "_test_emo")
 
-    elif predict_neutral_class:
+    if predict_neutral_class:
         pkl_ext_name = "emo_with_n" if not predict_sentiment else "with_n"
         if pickle_file_exists(pickle_name_fold + "_train_" + pkl_ext_name, root_folder):
             train_list = load_from_pickle(pickle_name_fold + "_train_" + pkl_ext_name, root_folder)
