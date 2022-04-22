@@ -8,7 +8,7 @@ def get_header_and_data(metrics, header_param, data_param, predict_neutral_class
 
     # List of emotions for headers
     emotions = ['happy', 'sad', 'anger', 'surprise', 'disgust', 'fear']
-    if predict_neutral_class and task != "regression" and task != "score_coa":  # TODO integrate neutral class for both
+    if predict_neutral_class:
         emotions.append('neutral')
 
     if task == "regression":
@@ -88,11 +88,15 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
         os.mkdir(model_csv_folder)
 
     # Create filenames
-    csv_path_regression = os.path.join('models_tested', model_name, 'csv', "regression.csv")
-    csv_path_score_coa = os.path.join('models_tested', model_name, 'csv', "classification_score_coarse.csv")
-    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_t_{}.csv".format(thres))
+    neutral_name = "_with_n" if predict_neutral_class else ""
+    csv_path_regression = os.path.join('models_tested', model_name, 'csv', "regression{}.csv".format(neutral_name))
+    csv_path_score_coa = os.path.join('models_tested', model_name, 'csv', "classification_score_coarse{}.csv"
+                                      .format(neutral_name))
+    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_t_{}{}.csv"
+                                      .format(thres, neutral_name))
                          for thres in threshold_emo_pres]
-    csv_path_dominant = os.path.join('models_tested', model_name, 'csv', "classification_dominant.csv")
+    csv_path_dominant = os.path.join('models_tested', model_name, 'csv', "classification_dominant{}.csv"
+                                     .format(neutral_name))
 
     # Create model parameter header and data for each csv file
     header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', 'with_neutral_class',
