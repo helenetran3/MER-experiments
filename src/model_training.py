@@ -1,5 +1,6 @@
 import os.path
 
+from src.pickle_functions import save_with_pickle
 from src.dataset_utils import get_tf_dataset
 
 from tensorflow.keras.models import Sequential
@@ -61,7 +62,7 @@ def build_model(num_features, num_classes, num_steps, num_layers, num_nodes, dro
 def train_model(train_list, valid_list, test_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
-                val_metric, patience, model_name):
+                val_metric, patience, model_name, predict_neutral_class):
     """
     Train the model.
 
@@ -81,7 +82,7 @@ def train_model(train_list, valid_list, test_list,
     :param val_metric: Metric on validation data to monitor
     :param patience: Number of epochs with no improvement after which the training will be stopped
     :param model_name: Name of the model currently tested
-    :return: history of the model training
+    :param predict_neutral_class: Whether we predict the neutral class
     """
 
     x_train = train_list[0]
@@ -109,8 +110,8 @@ def train_model(train_list, valid_list, test_list,
         os.mkdir('models_tested')
     if not os.path.isdir(model_folder):
         os.mkdir(model_folder)
-    model_save_name = "model_l_{}_n_{}_d_{}_b_{}_s_{}.h5".format(num_layers, num_nodes, dropout_rate,
-                                                                 batch_size, fixed_num_steps)
+    parameter_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
+    model_save_name = "model_{}.h5".format(parameter_name)
     model_save_path = os.path.join(model_folder, model_save_name)
 
     # Parameters for metric monitoring
@@ -144,6 +145,7 @@ def train_model(train_list, valid_list, test_list,
     print("Number validation datapoints: {} ({:.2f}%)".format(num_valid_samples, 100 * (num_valid_samples / total_data)))
     print("Number test datapoints: {} ({:.2f}%)".format(num_test_samples, 100 * (num_test_samples / total_data)))
     print("Number of classes:", num_classes)
+    print("Predict neutral class:", predict_neutral_class)
     print("\n>>> Model parameters")
     print("Model name:", model_name)
     print("Fixed number of steps:", fixed_num_steps)
@@ -168,4 +170,4 @@ def train_model(train_list, valid_list, test_list,
                         validation_steps=num_valid_samples // batch_size,
                         callbacks=[checkpoint, early_stopping])
 
-    return history
+    save_with_pickle(history, "history_" + parameter_name, root_folder=model_folder)

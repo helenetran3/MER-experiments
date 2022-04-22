@@ -31,13 +31,14 @@ def create_array_true_scores(y_test, num_classes, model_folder):
     return true_scores_all
 
 
-def get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, coarse=False):
+def get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, num_classes, coarse=False):
     """
     Get the presence score from a finer grained presence score
     (raw predictions -> 12 or 4 presence scores, or 12 presence scores -> 4 presence scores)
 
-    :param pred_raw: array of shape (test_size, 6) predicting the presence score of the 6 emotions
-    :param true_scores_all: array of shape (test_size, 7) giving the true sentiment and the presence score of the 6 emotions
+    :param pred_raw: array of shape (test_size, num_classes) predicting the presence score of the 6 emotions
+    :param true_scores_all: array of shape (test_size, num_classes) giving the presence score of the 6 emotions
+    :param num_classes: number of classes (7 with neutral class, else 6)
     :param coarse: if True, the resulting presence scores in [0, 1, 2, 3].
                    Default: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     :return: array of shape (test_size, 6) giving the presence score of all the 6 emotions
@@ -51,21 +52,22 @@ def get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, coarse=
         classes = [0, 1, 2, 3]
     pred_raw = pred_raw.flatten()
     pred_scores = [min(list(classes), key=lambda x: abs(x - pred_raw[i])) for i in range(pred_raw.shape[0])]
-    pred_scores = np.reshape(np.array(pred_scores), (-1, 6))
+    pred_scores = np.reshape(np.array(pred_scores), (-1, num_classes))
     return pred_scores
 
 
-def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo_pres, only_dominant=False):
+def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo_pres, num_classes, only_dominant=False):
     """
     Get the dominant emotion class(es) for each test segment based on the presence scores of emotions.
     If only_dominant, return a binary array, else return a list of 7 binary arrays for the 7 thresholds [0, 0.5, 1, 1.5, 2, 2.5, 3].
     Column indexes: 0:happy, 1:sad, 2:anger, 3:surprise, 4:disgust, 5:fear, (6:neutral)
 
-    :param score_array: array of shape (test_size,6) containing the presence score of 6 emotions
+    :param score_array: array of shape (test_size, num_classes) containing the presence score of 6 emotions (+ neutral)
     :param with_neutral_class: whether we add a neutral class or not
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
+    :param num_classes: number of classes (7 with neutral class, else 6)
     :param only_dominant: if True, only keep dominant classes (else keep any emotion present)
-    :return: Binary array of shape (test_size,7) if we add neutral class, else array of shape (test_size,6).
+    :return: Binary array of shape (test_size,7) if we add neutral class, else array of shape (test_size, 6).
     """
 
     def get_list_emotions_for_each_seg(score_array, test_size, with_neutral_class, only_dominant, thres):
@@ -92,13 +94,9 @@ def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo
         return list_emotions
 
     test_size = score_array.shape[0]
-    num_classes = 7 if with_neutral_class else 6
     mlb = MultiLabelBinarizer(classes=list(range(num_classes)))
 
-    if score_array.shape[1] != 6:
-        print("Make sure that the array of presence scores have 6 columns (for the 6 emotions).")
-
-    elif only_dominant:
+    if only_dominant:
         list_emotions = get_list_emotions_for_each_seg(score_array, test_size, with_neutral_class,
                                                        only_dominant=True, thres=None)
         bin_array_emotions = mlb.fit_transform(list_emotions)
@@ -118,7 +116,7 @@ def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo
         return list_bin_array_emotions
 
 
-def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, model_folder):
+def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, model_folder):
     """
     Compute the true labels (all arrays of shape (test_size, 6), true_classes_pres is a list of arrays of this type)
     true_scores_coa: Closest true score among [0, 1, 2, 3]
@@ -129,6 +127,7 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
            Possible values of true_scores_all: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
+    :param num_classes: number of classes (7 with neutral class, else 6)
     :param model_folder: The folder where the results will be saved
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
@@ -138,13 +137,14 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
-        true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, coarse=True)
+        true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, num_classes, coarse=True)
         save_with_pickle(true_scores_coa, "true_scores_coarse", root_folder=model_folder)
 
         # Compute true classes: binary arrays of shape (4654, 6 or 7)
-        true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres)
+        true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
+                                                          num_classes)
         true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
-                                                         only_dominant=True)
+                                                         num_classes, only_dominant=True)
         save_with_pickle(true_classes_pres, "true_classes_pres", root_folder=model_folder)
         save_with_pickle(true_classes_dom, "true_classes_dom", root_folder=model_folder)
 
@@ -157,7 +157,7 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
 
 
 def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, parameters_name,
-                        model_folder):
+                        num_classes, model_folder):
     """
     Compute the prediction labels (all arrays of shape (test_size, 6), pred_classes_pres is a list of arrays of this type))
     pred_scores_all: Closest predicted score among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
@@ -170,6 +170,7 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param num_classes: number of classes (7 with neutral class, else 6)
     :param model_folder: The folder where the results will be saved
     :return: pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
     """
@@ -180,32 +181,36 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     pred_cl_dom_save_name = "pred_classes_dom_{}".format(parameters_name)
 
     # Get presence scores from raw predictions
-    pred_scores_all = get_presence_score_from_finer_grained_val(pred_raw, true_scores_all)
-    pred_scores_coa = get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, coarse=True)
+    pred_scores_all = get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, num_classes)
+    pred_scores_coa = get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, num_classes, coarse=True)
     save_with_pickle(pred_scores_all, pred_sc_save_name, root_folder=model_folder)
     save_with_pickle(pred_scores_coa, pred_sc_coa_save_name, root_folder=model_folder)
 
     # Compute predicted classes from presence scores (useful for classification metrics including confusion matrix)
-    pred_classes_pres = get_class_from_presence_score(pred_scores_all, predict_neutral_class, threshold_emo_pres)
+    pred_classes_pres = get_class_from_presence_score(pred_scores_all, predict_neutral_class, threshold_emo_pres,
+                                                      num_classes)
     pred_classes_dom = get_class_from_presence_score(pred_scores_all, predict_neutral_class, threshold_emo_pres,
-                                                     only_dominant=True)
+                                                     num_classes, only_dominant=True)
     save_with_pickle(pred_classes_pres, pred_cl_pres_save_name, root_folder=model_folder)
     save_with_pickle(pred_classes_dom, pred_cl_dom_save_name, root_folder=model_folder)
 
     return pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
 
-def get_binary_arrays_from_scores_coa(scores_coa):
-    num_emotions = scores_coa.shape[1]
+def get_binary_arrays_from_scores_coa(scores_coa, num_classes):
+    """
+    Returns a list of num_classes binary arrays for each emotion. Each array has shape (test_size, 4).
+    Useful for classification metrics from coarse presence scores.
 
-    if num_emotions != 6:
-        print("Make sure that the array of presence scores have 6 columns (for the 6 emotions).")
+    :param scores_coa: array of size (test_size, num_classes) giving the coarse presence scores (0, 1, 2, or 3)
+    :param num_classes: number of classes (7 with neutral class, else 6)
+    :return: The list of binary arrays
+    """
 
-    else:
-        scores_for_each_emo = [scores_coa[:, i] for i in range(num_emotions)]
-        bin_arr_for_each_emo = [label_binarize(sc, classes=range(4)) for sc in scores_for_each_emo]
+    scores_for_each_emo = [scores_coa[:, i] for i in range(num_classes)]
+    bin_arr_for_each_emo = [label_binarize(sc, classes=range(4)) for sc in scores_for_each_emo]
 
-        return bin_arr_for_each_emo
+    return bin_arr_for_each_emo
 
 
 def model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder):
@@ -309,19 +314,20 @@ def get_regression_metrics(true_scores_all, pred_scores_all, round_decimals):
     return [mae, mse, r2] + mae_emo + mse_emo + r2_emo
 
 
-def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round_decimals):
+def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, num_classes, round_decimals):
     """
     Return unweighted mean of all the classification metrics for the case of coarse scores.
 
     :param true_scores_coa: Array of shape (test_size, 6) giving the true presence scores among [0, 1, 2, 3]
     :param pred_scores_coa: Array of shape (test_size, 6) giving the predicted presence scores among [0, 1, 2, 3]
+    :param num_classes: number of classes (7 with neutral class, else 6)
     :param round_decimals: number of decimals to be rounded for metrics
     :return: [f1_macro_uw_mean, f1_weighted_uw_mean, rec_macro_uw_mean, rec_weighted_uw_mean, prec_macro_uw_mean,
               prec_weighted_uw_mean, roc_auc_macro_uw_mean, roc_auc_weighted_uw_mean]
     """
 
-    true_scores_bin = get_binary_arrays_from_scores_coa(true_scores_coa)
-    pred_scores_bin = get_binary_arrays_from_scores_coa(pred_scores_coa)
+    true_scores_bin = get_binary_arrays_from_scores_coa(true_scores_coa, num_classes)
+    pred_scores_bin = get_binary_arrays_from_scores_coa(pred_scores_coa, num_classes)
     true_scores_bin_stack = np.vstack(true_scores_bin)
     pred_scores_bin_stack = np.vstack(pred_scores_bin)
 
@@ -494,7 +500,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     true_scores_all = create_array_true_scores(y_test, num_classes, model_folder)
     true_scores_coa, true_classes_pres, true_classes_dom = compute_true_labels(true_scores_all,
                                                                                predict_neutral_class,
-                                                                               threshold_emo_pres, model_folder)
+                                                                               threshold_emo_pres, num_classes,
+                                                                               model_folder)
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder)
@@ -502,6 +509,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                                                                             predict_neutral_class,
                                                                                             threshold_emo_pres,
                                                                                             parameters_name,
+                                                                                            num_classes,
                                                                                             model_folder)
 
     # Confusion matrix
@@ -513,7 +521,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     print("\n\n")
     print("In the following, all the metrics displayed for each emotion are in this order: sentiment, happy, sad, "
-          "anger, surprise, disgust, fear [, neutral].\n")
+          "anger, surprise, disgust, fear", end="")
+    print(", neutral.\n") if predict_neutral_class else print(".\n")
 
     # Regression metrics
     print("\n------- Presence score estimation (regression) --------\n")
@@ -521,9 +530,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     # Classification metrics
     print("\n------- Presence score classification [0,1,2,3] -------\n")
-    metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round_decimals)
-
-    num_classes += 1  # temporary. TODO Need to add neutral class in model training and evaluation
+    metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, num_classes,
+                                                             round_decimals)
 
     print("\n------- Detecting the presence of emotions ------------")
     metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,

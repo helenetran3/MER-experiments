@@ -272,6 +272,23 @@ def keep_only_emotion_labels(fold_list, pickle_name_fold, root_folder):
     return fold_list_res
 
 
+def add_neutral_class(fold_list, pickle_name_fold, root_folder):
+
+    y_list = fold_list[1]
+
+    y_list_with_neutral = []
+    for y in y_list:
+        sum_scores = np.sum(y)
+        new_labels = np.append(y, 1) if sum_scores == 0 else np.append(y, 0)
+        new_labels = np.reshape(new_labels, (1, -1))
+        y_list_with_neutral.append(new_labels)
+
+    fold_list_res = [fold_list[0], y_list_with_neutral, fold_list[2]]
+    save_with_pickle(fold_list_res, pickle_name_fold, root_folder=root_folder)
+
+    return fold_list_res
+
+
 # BUILD DATA GENERATOR AND TENSORFLOW DATASETS
 
 def seq_with_fixed_length(seq_array, fixed_num_steps):
