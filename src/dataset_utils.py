@@ -253,6 +253,25 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     return train_res, valid_res, test_res
 
 
+def keep_only_emotion_labels(fold_list, pickle_name_fold, root_folder):
+    """
+    Remove the sentiment annotation from the labels.
+
+    :param fold_list: List of 3 lists of arrays (one for features, one for labels, one for segment ids)
+    :param pickle_name_fold: root name of the pickle object that contains the training, validation and test folds
+    :param root_folder: Name of the folder where the pickle object is saved
+    :return: The same list with the sentiment annotations removed
+    """
+
+    y_list_with_emo_senti = fold_list[1]
+    y_list_with_emo = [y[:, 1:] for y in y_list_with_emo_senti]
+
+    fold_list_res = [fold_list[0], y_list_with_emo, fold_list[2]]
+    save_with_pickle(fold_list_res, pickle_name_fold, root_folder=root_folder)
+
+    return fold_list_res
+
+
 # BUILD DATA GENERATOR AND TENSORFLOW DATASETS
 
 def seq_with_fixed_length(seq_array, fixed_num_steps):
@@ -299,7 +318,7 @@ def datapoint_generator(x_list, y_list, seg_list, with_fixed_length, fixed_num_s
             yield x_list_i, y_list_i  #, seg_list_i
 
 
-def get_tf_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixed_num_steps, train_mode):
+def get_tf_dataset(x_list, y_list, seg_list, num_classes, batch_size, with_fixed_length, fixed_num_steps, train_mode):
     """
     Returns a TensorFlow dataset from a datapoint generator.
     #TODO Case where the number of steps is not fixed
@@ -307,6 +326,7 @@ def get_tf_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixe
     :param x_list: list of arrays of shape (number steps, number features)
     :param y_list: list of arrays of shape (1, 7), for the 7 emotions
     :param seg_list: list of ids of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'
+    :param num_classes: number of classes to predict
     :param batch_size: batch size
     :param with_fixed_length: whether we fix all feature vectors to the same length
     :param fixed_num_steps: fixed number of steps in the sequence
@@ -320,7 +340,7 @@ def get_tf_dataset(x_list, y_list, seg_list, batch_size, with_fixed_length, fixe
                                                 output_signature=(
                                                     tf.TensorSpec(shape=(None, fixed_num_steps, num_features),
                                                                   dtype=tf.float64),
-                                                    tf.TensorSpec(shape=(1, 7), dtype=tf.float64)
+                                                    tf.TensorSpec(shape=(1, num_classes), dtype=tf.float64)
                                                     # tf.TensorSpec(shape=(), dtype=tf.string)
                                                 ))
     tf_dataset.shuffle(len(seg_list)).batch(batch_size).repeat() if train_mode else tf_dataset.batch(1).repeat(1)

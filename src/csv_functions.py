@@ -109,11 +109,11 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     header_dominant, data_dominant = get_header_and_data(metrics_dominant, header_param, data_param,
                                                          predict_neutral_class, task="dominant")
 
-    print(len(header_regression), len(data_regression))
-    print(len(header_score_coa), len(data_score_coa))
-    print(len(header_dominant), len(data_dominant))
-    for i in range(len(metrics_presence)):
-        print(len(header_presence), len(data_presence[i]))
+    # print(len(header_regression), len(data_regression))
+    # print(len(header_score_coa), len(data_score_coa))
+    # print(len(header_dominant), len(data_dominant))
+    # for i in range(len(metrics_presence)):
+    #     print(len(header_presence), len(data_presence[i]))
 
     # Write in csv files
     write_csv(csv_path_regression, header_regression, data_regression)

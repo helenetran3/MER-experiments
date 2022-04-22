@@ -35,3 +35,4 @@ python3 main.py \
 --round_decimals 3 \
 --predict_neutral_class
 #--with_custom_split \
+#--predict_sentiment

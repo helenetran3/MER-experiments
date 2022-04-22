@@ -12,21 +12,19 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
-def create_true_scores_all(y_test, model_folder):
+def create_array_true_scores(y_test, num_classes, model_folder):
     """
     Return the true scores given by the database.
-    #TODO: Remove the function once the model only predict emotions during training and evaluation
-    #TODO: Don't forget to save the object
     Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
 
-    :param y_test: list of arrays of shape (1,7) containing the sentiment column + the 6 emotions
+    :param y_test: List of arrays of shape (1, num_classes)
+    :param num_classes: Number of classes
     :param model_folder: Name of the folder where the true_scores_all will be saved
     :return: true_scores_all
     """
 
     if not pickle_file_exists("true_scores_all", root_folder=model_folder):
-        true_scores_all = np.reshape(np.array(y_test), (-1, 7))
-        true_scores_all = true_scores_all[:, 1:]  # (4654, 6), removed the sentiment column
+        true_scores_all = np.reshape(np.array(y_test), (-1, num_classes))
         save_with_pickle(true_scores_all, "true_scores_all", root_folder=model_folder)
     else:
         true_scores_all = load_from_pickle("true_scores_all", root_folder=model_folder)
@@ -140,7 +138,6 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
-        # TODO remove sentiment prediction from model training and evaluation, and change the code consequently
         true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, coarse=True)
         save_with_pickle(true_scores_coa, "true_scores_coarse", root_folder=model_folder)
 
@@ -228,8 +225,7 @@ def model_prediction(model, test_dataset, num_test_samples, parameters_name, mod
     # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, root_folder=model_folder):  # perform prediction (for debugging)
         print("\n\n================================= Model Prediction ===========================================\n")
-        pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)  # (4654, 7)
-        pred_raw = pred_raw[:, 1:]  # TODO Reminder: Remove
+        pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)  # (4654, num_classes)
         save_with_pickle(pred_raw, pred_raw_save_name, root_folder=model_folder)
     else:
         pred_raw = load_from_pickle(pred_raw_save_name, root_folder=model_folder)
@@ -484,21 +480,21 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
 
     # Extract x, y and seg_ids for test set
     x_test = test_list[0]  # each element of shape (29, 409)
-    y_test = test_list[1]  # each element of shape (1, 7)
+    y_test = test_list[1]  # each element of shape (1, 6 or 7)
     seg_test = test_list[2]
+    num_classes = y_test[0].shape[1]
     num_test_samples = len(y_test)
 
     # Create TensorFlow test dataset for model prediction and evaluation
     with_fixed_length = (fixed_num_steps > 0)
-    test_dataset = get_tf_dataset(x_test, y_test, seg_test, batch_size, with_fixed_length, fixed_num_steps,
+    test_dataset = get_tf_dataset(x_test, y_test, seg_test, num_classes, batch_size, with_fixed_length, fixed_num_steps,
                                   train_mode=False)
 
     # True labels
-    true_scores_all = create_true_scores_all(y_test, model_folder)
+    true_scores_all = create_array_true_scores(y_test, num_classes, model_folder)
     true_scores_coa, true_classes_pres, true_classes_dom = compute_true_labels(true_scores_all,
                                                                                predict_neutral_class,
                                                                                threshold_emo_pres, model_folder)
-    num_classes = true_classes_dom.shape[1]
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder)
@@ -526,6 +522,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Classification metrics
     print("\n------- Presence score classification [0,1,2,3] -------\n")
     metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round_decimals)
+
+    num_classes += 1  # temporary. TODO Need to add neutral class in model training and evaluation
 
     print("\n------- Detecting the presence of emotions ------------")
     metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,

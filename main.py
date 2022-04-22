@@ -1,5 +1,5 @@
 from src.pickle_functions import pickle_file_exists, load_from_pickle
-from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset
+from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset, keep_only_emotion_labels
 from src.model_training import train_model
 from src.model_evaluation import evaluate_model
 import argparse
@@ -45,6 +45,8 @@ parser.add_argument('-lf', '--loss_function', type=str,
                     help="Loss function")
 parser.add_argument('-nc', '--predict_neutral_class', action='store_true',
                     help="Predict neutral class.")
+parser.add_argument('-emo', '--predict_sentiment', action='store_true',
+                    help="Predict sentiment in addition to emotions.")
 parser.add_argument('-tp', '--threshold_emo_present', type=float, nargs='+',
                     help="Threshold at which emotions are considered to be present. Values must be between 0 and 3. "
                          "Note that setting thresholds greater than 0 might lead to no positive true and predicted "
@@ -71,6 +73,16 @@ def main():
         train_list, valid_list, test_list = split_dataset(dataset,
                                                           train_ids, valid_ids, test_ids,
                                                           args.image_feature, args.pickle_name_fold)
+
+    if not args.predict_sentiment:
+        if pickle_file_exists(args.pickle_name_fold + "_train_only_emo", root_folder="cmu_mosei"):
+            train_list = load_from_pickle(args.pickle_name_fold + "_train_only_emo", root_folder="cmu_mosei")
+            valid_list = load_from_pickle(args.pickle_name_fold + "_valid_only_emo", root_folder="cmu_mosei")
+            test_list = load_from_pickle(args.pickle_name_fold + "_test_only_emo", root_folder="cmu_mosei")
+        else:
+            train_list = keep_only_emotion_labels(train_list, args.pickle_name_fold + "_train_only_emo", "cmu_mosei")
+            valid_list = keep_only_emotion_labels(valid_list, args.pickle_name_fold + "_valid_only_emo", "cmu_mosei")
+            test_list = keep_only_emotion_labels(test_list, args.pickle_name_fold + "_test_only_emo", "cmu_mosei")
 
     # Model training
     history = train_model(train_list, valid_list, test_list,

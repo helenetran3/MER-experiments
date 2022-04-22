@@ -8,12 +8,13 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
 
-def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, final_activ):
+def build_model(num_features, num_classes, num_steps, num_layers, num_nodes, dropout_rate, final_activ):
     """
     Build the model described in the paper (cf. README for the reference).
     Works only when the number of steps is the same for all datapoints.
 
     :param num_features: feature vector size (it should be the same at each step)
+    :param num_classes: number of classes to predict
     :param num_steps: number of steps in the sequence
     :param num_layers: number of bidirectional layers
     :param num_nodes: number of nodes for the penultimate dense layer
@@ -30,7 +31,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
         model.add(Dropout(dropout_rate))
         model.add(Dense(num_nodes, activation="relu"))
         model.add(Dropout(dropout_rate))
-        model.add(Dense(7, activation=final_activ))
+        model.add(Dense(num_classes, activation=final_activ))
 
     if num_layers == 2:
         model.add(BatchNormalization(input_shape=(num_steps, num_features)))
@@ -40,7 +41,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
         model.add(Dropout(dropout_rate))
         model.add(Dense(num_nodes, activation="relu"))
         model.add(Dropout(dropout_rate))
-        model.add(Dense(7, activation=final_activ))
+        model.add(Dense(num_classes, activation=final_activ))
 
     if num_layers == 3:
         model.add(BatchNormalization(input_shape=(num_steps, num_features)))
@@ -52,7 +53,7 @@ def build_model(num_features, num_steps, num_layers, num_nodes, dropout_rate, fi
         model.add(Dropout(dropout_rate))
         model.add(Dense(num_nodes, activation="relu"))
         model.add(Dropout(dropout_rate))
-        model.add(Dense(7, activation=final_activ))
+        model.add(Dense(num_classes, activation=final_activ))
 
     return model
 
@@ -65,7 +66,7 @@ def train_model(train_list, valid_list, test_list,
     Train the model.
 
     :param train_list: [x_train, y_train, seg_train] where x_train is a list of arrays of shape (number steps, number
-    features), y_train a list arrays of shape (1, 7), and seg_train a list of segment ids (ex: 'zk2jTlAtvSU[1]')
+    features), y_train a list arrays of shape (1, 6 or 7), and seg_train a list of segment ids (ex: 'zk2jTlAtvSU[1]')
     :param valid_list: [x_valid, y_valid, seg_valid]
     :param test_list: [x_test, y_test, seg_test]
     :param batch_size: Batch size for training
@@ -89,6 +90,7 @@ def train_model(train_list, valid_list, test_list,
     x_valid = valid_list[0]
     y_valid = valid_list[1]
     seg_valid = valid_list[2]
+    num_classes = y_train[0].shape[1]
     num_train_samples = len(y_train)
     num_valid_samples = len(y_valid)
     num_test_samples = len(test_list[1])
@@ -96,10 +98,10 @@ def train_model(train_list, valid_list, test_list,
 
     # Create TensorFlow datasets for model training
     with_fixed_length = (fixed_num_steps > 0)
-    train_dataset = get_tf_dataset(x_train, y_train, seg_train, batch_size, with_fixed_length, fixed_num_steps,
-                                   train_mode=True)
-    valid_dataset = get_tf_dataset(x_valid, y_valid, seg_valid, batch_size, with_fixed_length, fixed_num_steps,
-                                   train_mode=True)
+    train_dataset = get_tf_dataset(x_train, y_train, seg_train, num_classes, batch_size, with_fixed_length,
+                                   fixed_num_steps, train_mode=True)
+    valid_dataset = get_tf_dataset(x_valid, y_valid, seg_valid, num_classes, batch_size, with_fixed_length,
+                                   fixed_num_steps, train_mode=True)
 
     # Parameters to save model
     model_folder = os.path.join('models_tested', model_name)
@@ -129,15 +131,19 @@ def train_model(train_list, valid_list, test_list,
 
     # Build model
     num_features = x_train[0].shape[1]
-    model = build_model(num_features, fixed_num_steps, num_layers, num_nodes, dropout_rate, final_activ)
+    model = build_model(num_features, num_classes, fixed_num_steps, num_layers, num_nodes, dropout_rate, final_activ)
     optimizer = Adam(learning_rate=learning_rate)
     model.compile(loss=loss_function, optimizer=optimizer)
+
+    print("\n\n")
+    print(model.summary())
 
     print("\n\n============================== Training Parameters ===========================================")
     print("\n>>> Dataset")
     print("Number training datapoints: {} ({:.2f}%)".format(num_train_samples, 100 * (num_train_samples / total_data)))
     print("Number validation datapoints: {} ({:.2f}%)".format(num_valid_samples, 100 * (num_valid_samples / total_data)))
     print("Number test datapoints: {} ({:.2f}%)".format(num_test_samples, 100 * (num_test_samples / total_data)))
+    print("Number of classes:", num_classes)
     print("\n>>> Model parameters")
     print("Model name:", model_name)
     print("Fixed number of steps:", fixed_num_steps)
