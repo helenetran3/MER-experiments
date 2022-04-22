@@ -1,5 +1,5 @@
 from src.pickle_functions import pickle_file_exists, load_from_pickle
-from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset, keep_only_emotion_labels, add_neutral_class
+from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset, update_folds
 from src.model_training import train_model
 from src.model_evaluation import evaluate_model
 import argparse
@@ -74,26 +74,10 @@ def main():
                                                           train_ids, valid_ids, test_ids,
                                                           args.image_feature, args.pickle_name_fold)
 
-    if not args.predict_sentiment:
-        if pickle_file_exists(args.pickle_name_fold + "_train_only_emo", root_folder="cmu_mosei"):
-            train_list = load_from_pickle(args.pickle_name_fold + "_train_only_emo", root_folder="cmu_mosei")
-            valid_list = load_from_pickle(args.pickle_name_fold + "_valid_only_emo", root_folder="cmu_mosei")
-            test_list = load_from_pickle(args.pickle_name_fold + "_test_only_emo", root_folder="cmu_mosei")
-        else:
-            train_list = keep_only_emotion_labels(train_list, args.pickle_name_fold + "_train_only_emo", "cmu_mosei")
-            valid_list = keep_only_emotion_labels(valid_list, args.pickle_name_fold + "_valid_only_emo", "cmu_mosei")
-            test_list = keep_only_emotion_labels(test_list, args.pickle_name_fold + "_test_only_emo", "cmu_mosei")
-
-    if args.predict_neutral_class:
-        pkl_ext_name = "emo_with_neutral" if not args.predict_sentiment else "with_neutral"
-        if pickle_file_exists(args.pickle_name_fold + "_train_" + pkl_ext_name, root_folder="cmu_mosei"):
-            train_list = load_from_pickle(args.pickle_name_fold + "_train_" + pkl_ext_name, root_folder="cmu_mosei")
-            valid_list = load_from_pickle(args.pickle_name_fold + "_valid_" + pkl_ext_name, root_folder="cmu_mosei")
-            test_list = load_from_pickle(args.pickle_name_fold + "_test_" + pkl_ext_name, root_folder="cmu_mosei")
-        else:
-            train_list = add_neutral_class(train_list, args.pickle_name_fold + "_train_" + pkl_ext_name, "cmu_mosei")
-            valid_list = add_neutral_class(valid_list, args.pickle_name_fold + "_valid_" + pkl_ext_name, "cmu_mosei")
-            test_list = add_neutral_class(test_list, args.pickle_name_fold + "_test_" + pkl_ext_name, "cmu_mosei")
+    # Update labels for each fold, depending on predict_sentiment and predict_neutral_class values
+    train_list, valid_list, test_list = update_folds(train_list, valid_list, test_list,
+                                                     args.pickle_name_fold, args.predict_sentiment,
+                                                     args.predict_neutral_class)
 
     # Model training
     train_model(train_list, valid_list, test_list,
@@ -101,6 +85,7 @@ def main():
                 args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function, args.val_metric,
                 args.patience, args.model_name, args.predict_neutral_class)
 
+    # Model evaluation
     evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.num_layers, args.num_nodes, args.dropout_rate,
                    args.loss_function, args.model_name, args.predict_neutral_class, args.threshold_emo_present,
                    args.round_decimals)
