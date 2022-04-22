@@ -8,8 +8,8 @@ from src.dataset_utils import get_tf_dataset
 
 from sklearn.preprocessing import LabelEncoder, label_binarize, MultiLabelBinarizer
 from sklearn.metrics import multilabel_confusion_matrix
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
-from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
 def create_true_scores_all(y_test, model_folder):
@@ -278,21 +278,39 @@ def compute_loss_value(model, test_dataset, loss_function, round_decimals):
     return loss_function_val
 
 
-def get_regression_metrics(true_scores_all, pred_raw, round_decimals):
+def get_regression_metrics(true_scores_all, pred_scores_all, round_decimals):
     """
     Compute regression metrics: mean absolute error and mean squared error
 
     :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database)
-    :param pred_raw: array of shape (test_size, 6) predicting the presence score of the 6 emotions
+    :param pred_scores_all: array of shape (test_size, 6) predicting the presence score of the 6 emotions
     :param round_decimals: number of decimals to be rounded for metrics
     :return: List of classification metrics
     """
 
-    mae = round(mean_absolute_error(true_scores_all, pred_raw), round_decimals)
-    mse = round(mean_squared_error(true_scores_all, pred_raw), round_decimals)
-    print("Mean absolute error:", mae)
-    print("Mean squared error:", mse)
-    return [mae, mse]
+    num_emotions = true_scores_all.shape[1]
+
+    if num_emotions != 6:
+        print("Make sure that the array of presence scores have 6 columns (for the 6 emotions).")
+
+    true_scores_emo = [true_scores_all[:, i] for i in range(num_emotions)]
+    pred_scores_emo = [pred_scores_all[:, i] for i in range(num_emotions)]
+
+    mae_emo = [round(mean_absolute_error(t, p), round_decimals) for t, p in zip(true_scores_emo, pred_scores_emo)]
+    mse_emo = [round(mean_squared_error(t, p), round_decimals) for t, p in zip(true_scores_emo, pred_scores_emo)]
+    r2_emo = [round(r2_score(t, p), round_decimals) for t, p in zip(true_scores_emo, pred_scores_emo)]
+    mae = round(mean_absolute_error(true_scores_all, pred_scores_all), round_decimals)
+    mse = round(mean_squared_error(true_scores_all, pred_scores_all), round_decimals)
+    r2 = round(r2_score(true_scores_all, pred_scores_all), round_decimals)
+
+    print("Mean absolute error (for each emotion):", mae_emo)
+    print("Mean squared error (for each emotion):", mse_emo)
+    print("R2 score (for each emotion):", r2_emo)
+    print("Mean absolute error (overall):", mae)
+    print("Mean squared error (overall):", mse)
+    print("R2 score (overall):", r2)
+
+    return [mae, mse, r2] + mae_emo + mse_emo + r2_emo
 
 
 def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round_decimals):
@@ -497,17 +515,22 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Model evaluation
     loss_function_val = compute_loss_value(model, test_dataset, loss_function, round_decimals)
 
+    print("\n\n")
+    print("In the following, all the metrics displayed for each emotion are in this order: sentiment, happy, sad, "
+          "anger, surprise, disgust, fear [, neutral].\n")
+
     # Regression metrics
+    print("\n------- Presence score estimation (regression) --------\n")
     metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
 
     # Classification metrics
-    print("\n----- Presence score for each emotion ------\n")
+    print("\n------- Presence score classification [0,1,2,3] -------\n")
     metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round_decimals)
 
-    print("\n------ Presence/absence of an emotion ------")
+    print("\n------- Detecting the presence of emotions ------------")
     metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,
                                                    round_decimals, thres) for i, thres in enumerate(threshold_emo_pres)]
-    print("\n----- Prediction of a dominant emotion -----\n")
+    print("\n------- Predicting dominant emotions ------------------\n")
     metrics_dominant = get_classification_metrics(true_classes_dom, pred_classes_dom, num_classes, round_decimals)
 
     save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,

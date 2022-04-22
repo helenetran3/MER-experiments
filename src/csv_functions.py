@@ -8,12 +8,13 @@ def get_header_and_data(metrics, header_param, data_param, predict_neutral_class
 
     # List of emotions for headers
     emotions = ['happy', 'sad', 'anger', 'surprise', 'disgust', 'fear']
-    if predict_neutral_class and task != "score_coa":
+    if predict_neutral_class and task != "regression" and task != "score_coa":  # TODO integrate neutral class for both
         emotions.append('neutral')
 
     if task == "regression":
-        header_overall = ['mae', 'mse']
-        header = header_param + header_overall
+        header_overall = ['mae', 'mse', 'r2']
+        header_per_emo = ['{}_{}'.format(m, e) for m in header_overall for e in emotions]
+        header = header_param + header_overall + header_per_emo
         data = data_param + metrics
 
     elif task == "score_coa":
@@ -108,11 +109,11 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     header_dominant, data_dominant = get_header_and_data(metrics_dominant, header_param, data_param,
                                                          predict_neutral_class, task="dominant")
 
-    # print(len(header_regression), len(data_regression))
-    # print(len(header_score_coa), len(data_score_coa))
-    # print(len(header_dominant), len(data_dominant))
-    # for i in range(len(metrics_presence)):
-    #     print(len(header_presence), len(data_presence[i]))
+    print(len(header_regression), len(data_regression))
+    print(len(header_score_coa), len(data_score_coa))
+    print(len(header_dominant), len(data_dominant))
+    for i in range(len(metrics_presence)):
+        print(len(header_presence), len(data_presence[i]))
 
     # Write in csv files
     write_csv(csv_path_regression, header_regression, data_regression)
