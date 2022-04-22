@@ -158,7 +158,8 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     return true_scores_coa, true_classes_pres, true_classes_dom
 
 
-def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, parameters_name, model_folder):
+def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, parameters_name,
+                        model_folder):
     """
     Compute the prediction labels (all arrays of shape (test_size, 6), pred_classes_pres is a list of arrays of this type))
     pred_scores_all: Closest predicted score among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
@@ -197,7 +198,6 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
 
 
 def get_binary_arrays_from_scores_coa(scores_coa):
-
     num_emotions = scores_coa.shape[1]
 
     if num_emotions != 6:
@@ -298,8 +298,8 @@ def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round
     """
     Return unweighted mean of all the classification metrics for the case of coarse scores.
 
-    :param true_scores_coa: Binary array of shape (test_size, 6) giving the true presence scores among [0, 1, 2, 3]
-    :param pred_scores_coa: Binary array of shape (test_size, 6) giving the predicted presence scores among [0, 1, 2, 3]
+    :param true_scores_coa: Array of shape (test_size, 6) giving the true presence scores among [0, 1, 2, 3]
+    :param pred_scores_coa: Array of shape (test_size, 6) giving the predicted presence scores among [0, 1, 2, 3]
     :param round_decimals: number of decimals to be rounded for metrics
     :return: [f1_macro_uw_mean, f1_weighted_uw_mean, rec_macro_uw_mean, rec_weighted_uw_mean, prec_macro_uw_mean,
               prec_weighted_uw_mean, roc_auc_macro_uw_mean, roc_auc_weighted_uw_mean]
@@ -307,21 +307,23 @@ def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round
 
     true_scores_bin = get_binary_arrays_from_scores_coa(true_scores_coa)
     pred_scores_bin = get_binary_arrays_from_scores_coa(pred_scores_coa)
+    true_scores_bin_stack = np.vstack(true_scores_bin)
+    pred_scores_bin_stack = np.vstack(pred_scores_bin)
 
     # In this block, we go through all the emotions. Metrics are here given for each emotion.
     # Imbalance in presence score [0, 1, 2, 3]. example for happy: [3048, 1210, 376, 20],
     # hence we also calculate weighted metrics
-    f1_macro_emo = [f1_score(ts, ps, average='macro')
+    f1_macro_emo = [f1_score(ts, ps, average='macro', zero_division=1)
                     for ts, ps in zip(true_scores_bin, pred_scores_bin)]
-    f1_weighted_emo = [f1_score(ts, ps, average='weighted')
+    f1_weighted_emo = [f1_score(ts, ps, average='weighted', zero_division=1)
                        for ts, ps in zip(true_scores_bin, pred_scores_bin)]
-    rec_macro_emo = [recall_score(ts, ps, average='macro')
+    rec_macro_emo = [recall_score(ts, ps, average='macro', zero_division=1)
                      for ts, ps in zip(true_scores_bin, pred_scores_bin)]
-    rec_weighted_emo = [recall_score(ts, ps, average='weighted')
+    rec_weighted_emo = [recall_score(ts, ps, average='weighted', zero_division=1)
                         for ts, ps in zip(true_scores_bin, pred_scores_bin)]
-    prec_macro_emo = [precision_score(ts, ps, average='macro')
+    prec_macro_emo = [precision_score(ts, ps, average='macro', zero_division=1)
                       for ts, ps in zip(true_scores_bin, pred_scores_bin)]
-    prec_weighted_emo = [precision_score(ts, ps, average='weighted')
+    prec_weighted_emo = [precision_score(ts, ps, average='weighted', zero_division=1)
                          for ts, ps in zip(true_scores_bin, pred_scores_bin)]
     # roc_auc_macro_emo = [roc_auc_score(ts, ps, average='macro')
     #                      for ts, ps in zip(true_scores_bin, pred_scores_bin)]
@@ -329,8 +331,7 @@ def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round
     #                         for ts, ps in zip(true_scores_bin, pred_scores_bin)]
 
     # Unweighted mean over the six emotions
-    # TODO: Weighted?
-    # TODO Accuracy?
+    acc = round(accuracy_score(true_scores_bin_stack, pred_scores_bin_stack), round_decimals)
     f1_macro_uw_mean = round(np.mean(f1_macro_emo), round_decimals)
     f1_weighted_uw_mean = round(np.mean(f1_weighted_emo), round_decimals)
     rec_macro_uw_mean = round(np.mean(rec_macro_emo), round_decimals)
@@ -339,9 +340,10 @@ def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round
     prec_weighted_uw_mean = round(np.mean(prec_weighted_emo), round_decimals)
     # roc_auc_macro_uw_mean = round(np.mean(roc_auc_macro_emo), round_decimals)
     # roc_auc_weighted_uw_mean = round(np.mean(roc_auc_weighted_emo), round_decimals)
-    print("\n4 classes (presence scores) for each emotion class. "
+    print("4 classes (presence scores) for each emotion class. "
           "The following metrics all give the unweighted mean over the emotions and the brackets give the type "
           "of mean over the presence scores.\n")
+    print("Accuracy:", acc)
     print("F1 score (weighted mean):", f1_macro_uw_mean)
     print("F1 score (unweighted mean):", f1_weighted_uw_mean)
     print("Recall (weighted mean):", rec_macro_uw_mean)
@@ -352,10 +354,10 @@ def get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, round
     # print("ROC AUC (unweighted mean):", roc_auc_weighted_uw_mean)
 
     res = [f1_macro_uw_mean, f1_weighted_uw_mean, rec_macro_uw_mean, rec_weighted_uw_mean, prec_macro_uw_mean,
-            prec_weighted_uw_mean]  #, roc_auc_macro_uw_mean, roc_auc_weighted_uw_mean]
+           prec_weighted_uw_mean]  # , roc_auc_macro_uw_mean, roc_auc_weighted_uw_mean]
 
     res = res + f1_macro_emo + f1_weighted_emo + rec_macro_emo + rec_weighted_emo + prec_macro_emo + prec_weighted_emo \
-          # + roc_auc_macro_emo + roc_auc_weighted_emo
+        # + roc_auc_macro_emo + roc_auc_weighted_emo
 
     return res
 
@@ -376,15 +378,15 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
     """
 
     acc = round(accuracy_score(true_classes, pred_classes), round_decimals)
-    f1_each = f1_score(true_classes, pred_classes, average=None)
-    f1_macro = round(f1_score(true_classes, pred_classes, average='macro'), round_decimals)
-    f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    rec_each = recall_score(true_classes, pred_classes, average=None)
-    rec_macro = round(recall_score(true_classes, pred_classes, average='macro'), round_decimals)
-    rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted'), round_decimals)
-    prec_each = precision_score(true_classes, pred_classes, average=None)
-    prec_macro = round(precision_score(true_classes, pred_classes, average='macro'), round_decimals)
-    prec_weighted = round(precision_score(true_classes, pred_classes, average='weighted'), round_decimals)
+    f1_each = f1_score(true_classes, pred_classes, average=None, zero_division=1)
+    f1_macro = round(f1_score(true_classes, pred_classes, average='macro', zero_division=1), round_decimals)
+    f1_weighted = round(f1_score(true_classes, pred_classes, average='weighted', zero_division=1), round_decimals)
+    rec_each = recall_score(true_classes, pred_classes, average=None, zero_division=1)
+    rec_macro = round(recall_score(true_classes, pred_classes, average='macro', zero_division=1), round_decimals)
+    rec_weighted = round(recall_score(true_classes, pred_classes, average='weighted', zero_division=1), round_decimals)
+    prec_each = precision_score(true_classes, pred_classes, average=None, zero_division=1)
+    prec_macro = round(precision_score(true_classes, pred_classes, average='macro', zero_division=1), round_decimals)
+    prec_weighted = round(precision_score(true_classes, pred_classes, average='weighted', zero_division=1), round_decimals)
     true_classes_bin = label_binarize(true_classes, classes=list(range(num_classes)))
     pred_classes_bin = label_binarize(pred_classes, classes=list(range(num_classes)))
     # Next block: Compute ROC AUC when NOT defining the presence/absence of an emotion (as this task creates error
@@ -393,8 +395,8 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
         roc_auc_each = roc_auc_score(true_classes_bin, pred_classes_bin, average=None, multi_class='ovr')
         roc_auc_macro = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='macro', multi_class='ovr'),
                               round_decimals)
-        roc_auc_weighted = round(roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'),
-                                 round_decimals)
+        roc_auc_weighted = round(
+            roc_auc_score(true_classes_bin, pred_classes_bin, average='weighted', multi_class='ovr'), round_decimals)
         roc_auc_each_rounded = [round(val, round_decimals) for val in roc_auc_each]
 
     f1_each_rounded = [round(val, round_decimals) for val in f1_each]
@@ -418,7 +420,6 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
         print("ROC AUC (for each):", roc_auc_each_rounded)
         print("ROC AUC (unweighted mean):", roc_auc_macro)
         print("ROC AUC (weighted mean):", roc_auc_weighted)
-    print("\n")
 
     res = [acc, f1_macro, f1_weighted, rec_macro, rec_weighted, prec_macro, prec_weighted]
     if thres is None:
@@ -449,7 +450,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     """
 
     # Load best model
-    parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
+    parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size,
+                                                        fixed_num_steps)
     model_save_name = "model_{}.h5".format(parameters_name)
     model_folder = os.path.join('models_tested', model_name)
     model_save_path = os.path.join(model_folder, model_save_name)
