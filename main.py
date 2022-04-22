@@ -87,8 +87,8 @@ def main():
 
     # Model evaluation
     evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.num_layers, args.num_nodes, args.dropout_rate,
-                   args.loss_function, args.model_name, args.predict_neutral_class, args.threshold_emo_present,
-                   args.round_decimals)
+                   args.loss_function, args.model_name, args.predict_neutral_class, args.predict_sentiment,
+                   args.threshold_emo_present, args.round_decimals)
 
 
 if __name__ == "__main__":

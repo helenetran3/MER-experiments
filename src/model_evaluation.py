@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 from tensorflow.keras.models import load_model
-from src.pickle_functions import pickle_file_exists, save_with_pickle, load_from_pickle
+from src.pickle_functions import *
 from src.csv_functions import save_results_in_csv_file
 from src.dataset_utils import get_tf_dataset
 from src.model_metrics import get_and_print_all_metrics, compute_multilabel_confusion_matrix, compute_loss_value
@@ -13,7 +13,7 @@ from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 # COMPUTE TRUE/PREDICTED LABEL ARRAYS DERIVED FROM PRESENCE SCORES: ALL PRESENCE SCORES, COARSE PRESENCE SCORES,
 # BINARY CLASSIFICATION FOR EACH EMOTION, CLASSIFICATION OF DOMINANT EMOTIONS
 
-def create_array_true_scores(y_test, num_classes, model_folder):
+def create_array_true_scores(y_test, num_classes, model_folder, pkl_ext_name):
     """
     Return the true scores given by the database.
     Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
@@ -21,14 +21,15 @@ def create_array_true_scores(y_test, num_classes, model_folder):
     :param y_test: List of arrays of shape (1, num_classes)
     :param num_classes: Number of classes
     :param model_folder: Name of the folder where the true_scores_all will be saved
+    :param pkl_ext_name: extension name for pickle object, info on whether we predict sentiment/neutral class
     :return: true_scores_all
     """
 
-    if not pickle_file_exists("true_scores_all", root_folder=model_folder):
+    if not pickle_file_exists("true_scores_all_" + pkl_ext_name, root_folder=model_folder):
         true_scores_all = np.reshape(np.array(y_test), (-1, num_classes))
-        save_with_pickle(true_scores_all, "true_scores_all", root_folder=model_folder)
+        save_with_pickle(true_scores_all, "true_scores_all_" + pkl_ext_name, root_folder=model_folder)
     else:
-        true_scores_all = load_from_pickle("true_scores_all", root_folder=model_folder)
+        true_scores_all = load_from_pickle("true_scores_all_" + pkl_ext_name, root_folder=model_folder)
     return true_scores_all
 
 
@@ -117,7 +118,8 @@ def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo
         return list_bin_array_emotions
 
 
-def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, model_folder):
+def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, pkl_ext_name,
+                        model_folder):
     """
     Compute the true labels (all arrays of shape (test_size, 6), true_classes_pres is a list of arrays of this type)
     true_scores_coa: Closest true score among [0, 1, 2, 3]
@@ -129,30 +131,31 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param num_classes: number of classes (7 with neutral class, else 6)
+    :param pkl_ext_name: extension name for pickle object, info on whether we predict sentiment/neutral class
     :param model_folder: The folder where the results will be saved
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-    if not pickle_file_exists("true_scores_coarse", root_folder=model_folder):
+    if not pickle_file_exists("true_scores_coarse_" + pkl_ext_name, root_folder=model_folder):
 
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
         true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, num_classes, coarse=True)
-        save_with_pickle(true_scores_coa, "true_scores_coarse", root_folder=model_folder)
+        save_with_pickle(true_scores_coa, "true_scores_coarse_" + pkl_ext_name, root_folder=model_folder)
 
         # Compute true classes: binary arrays of shape (4654, 6 or 7)
         true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                           num_classes)
         true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                          num_classes, only_dominant=True)
-        save_with_pickle(true_classes_pres, "true_classes_pres", root_folder=model_folder)
-        save_with_pickle(true_classes_dom, "true_classes_dom", root_folder=model_folder)
+        save_with_pickle(true_classes_pres, "true_classes_pres_" + pkl_ext_name, root_folder=model_folder)
+        save_with_pickle(true_classes_dom, "true_classes_dom_" + pkl_ext_name, root_folder=model_folder)
 
     else:
-        true_scores_coa = load_from_pickle("true_scores_coarse", root_folder=model_folder)
-        true_classes_pres = load_from_pickle("true_classes_pres", root_folder=model_folder)
-        true_classes_dom = load_from_pickle("true_classes_dom", root_folder=model_folder)
+        true_scores_coa = load_from_pickle("true_scores_coarse_" + pkl_ext_name, root_folder=model_folder)
+        true_classes_pres = load_from_pickle("true_classes_pres_" + pkl_ext_name, root_folder=model_folder)
+        true_classes_dom = load_from_pickle("true_classes_dom_" + pkl_ext_name, root_folder=model_folder)
 
     return true_scores_coa, true_classes_pres, true_classes_dom
 
@@ -225,7 +228,7 @@ def model_prediction(model, test_dataset, num_test_samples, parameters_name, mod
 
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
-                   model_name, predict_neutral_class, threshold_emo_pres, round_decimals):
+                   model_name, predict_neutral_class, predict_sentiment, threshold_emo_pres, round_decimals):
     """
     Evaluate the performance of the best model.
 
@@ -238,13 +241,16 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param loss_function: Loss function
     :param model_name: Name of the model currently tested
     :param predict_neutral_class: Whether we predict the neutral class
+    :param predict_sentiment: Whether we predict the sentiment
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param round_decimals: Number of decimals to be rounded for metrics
     """
 
+    pkl_ext_name = create_pickle_extension_name(predict_sentiment, predict_neutral_class)
+
     # Load best model
-    parameters_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size,
-                                                        fixed_num_steps)
+    parameters_name = "{}_l_{}_n_{}_d_{}_b_{}_s_{}".format(pkl_ext_name, num_layers, num_nodes, dropout_rate,
+                                                           batch_size, fixed_num_steps)
     model_save_name = "model_{}.h5".format(parameters_name)
     model_folder = os.path.join('models_tested', model_name)
     model_save_path = os.path.join(model_folder, model_save_name)
@@ -263,9 +269,10 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                   train_mode=False)
 
     # True labels
-    true_scores_all = create_array_true_scores(y_test, num_classes, model_folder)
+    true_scores_all = create_array_true_scores(y_test, num_classes, model_folder, pkl_ext_name)
     true_scores_coa, true_classes_pres, true_classes_dom = \
-        compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, model_folder)
+        compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, pkl_ext_name,
+                            model_folder)
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder)
@@ -289,4 +296,4 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     # Save metrics in csv file
     save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, metrics_regression, metrics_score_coa, metrics_presence,
-                             metrics_dominant, predict_neutral_class, threshold_emo_pres)
+                             metrics_dominant, predict_neutral_class, threshold_emo_pres, pkl_ext_name)

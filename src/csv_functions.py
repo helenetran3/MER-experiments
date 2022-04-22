@@ -49,7 +49,8 @@ def get_header_and_data(metrics, header_param, data_param, predict_neutral_class
 
 def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, metrics_regression, metrics_score_coa,
-                             metrics_presence, metrics_dominant, predict_neutral_class, threshold_emo_pres):
+                             metrics_presence, metrics_dominant, predict_neutral_class, threshold_emo_pres,
+                             pkl_ext_name):
     """
     Save results of a single model to a csv file.
 
@@ -67,6 +68,7 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     :param metrics_dominant: List of metrics for detecting the dominant emotion(s)
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
+    :param pkl_ext_name: extension name for pickle object, info on whether we predict sentiment/neutral class
     :return: One-line results added to the csv file.
     """
 
@@ -88,15 +90,14 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
         os.mkdir(model_csv_folder)
 
     # Create filenames
-    neutral_name = "_with_n" if predict_neutral_class else ""
-    csv_path_regression = os.path.join('models_tested', model_name, 'csv', "regression{}.csv".format(neutral_name))
-    csv_path_score_coa = os.path.join('models_tested', model_name, 'csv', "classification_score_coarse{}.csv"
-                                      .format(neutral_name))
-    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_t_{}{}.csv"
-                                      .format(thres, neutral_name))
+    csv_path_regression = os.path.join('models_tested', model_name, 'csv', "regression_{}.csv".format(pkl_ext_name))
+    csv_path_score_coa = os.path.join('models_tested', model_name, 'csv', "classification_score_coarse_{}.csv"
+                                      .format(pkl_ext_name))
+    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_t_{}_{}.csv"
+                                      .format(thres, pkl_ext_name))
                          for thres in threshold_emo_pres]
-    csv_path_dominant = os.path.join('models_tested', model_name, 'csv', "classification_dominant{}.csv"
-                                     .format(neutral_name))
+    csv_path_dominant = os.path.join('models_tested', model_name, 'csv', "classification_dominant_{}.csv"
+                                     .format(pkl_ext_name))
 
     # Create model parameter header and data for each csv file
     header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', 'with_neutral_class',
