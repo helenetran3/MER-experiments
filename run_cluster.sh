@@ -18,21 +18,21 @@ python3 main.py \
 --pickle_name_fold fold \
 --align_to_text \
 --append_label_to_data \
---val_metric loss \
 --image_feature facet \
---batch_size 32 \
---fixed_num_steps 45 \
+--model_name MultimodalDNN \
 --num_layers 1 \
 --num_nodes 100 \
 --dropout_rate 0.2 \
 --final_activ linear \
---model_name MultimodalDNN \
 --num_epochs 2 \
 --patience 1 \
---learning_rate 0.001 \
+--batch_size 32 \
+--fixed_num_steps 45 \
 --loss_function mean_absolute_error \
+--learning_rate 0.001 \
+--val_metric loss \
+--predict_neutral_class \
 --threshold_emo_present 0 0.5 1 \
---round_decimals 3 \
---predict_neutral_class
+--round_decimals 3
 #--with_custom_split \
-#--predict_sentiment
+#--predict_sentiment \

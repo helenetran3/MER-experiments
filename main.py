@@ -2,6 +2,7 @@ from src.pickle_functions import pickle_file_exists, load_from_pickle
 from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset, update_folds
 from src.model_training import train_model
 from src.model_evaluation import evaluate_model
+from src.csv_functions import save_model_param_in_csv_file
 import argparse
 
 parser = argparse.ArgumentParser(description="SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.")
@@ -79,9 +80,16 @@ def main():
                                                      args.pickle_name_fold, args.predict_sentiment,
                                                      args.predict_neutral_class)
 
+    # Save model parameters
+    model_training_param = [args.num_epochs, args.patience, args.batch_size, args.fixed_num_steps,
+                            args.loss_function, args.learning_rate, args.val_metric, args.predict_neutral_class]
+    model_archi_param = [args.model_name, args.num_layers, args.num_nodes, args.dropout_rate, args.final_activ]
+    model_archi_header = ['model_name', 'num_layers', 'num_nodes', 'dropout_rate', 'final_activ']
+    save_model_param_in_csv_file(model_training_param, model_archi_param, model_archi_header, args.model_name)
+
     # Model training
     train_model(train_list, valid_list, test_list,
-                args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers,args.num_nodes,
+                args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers, args.num_nodes,
                 args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function, args.val_metric,
                 args.patience, args.model_name, args.predict_neutral_class)
 

@@ -291,7 +291,7 @@ def update_folds(train_list, valid_list, test_list, pickle_name_fold, predict_se
 
         return fold_list_res
 
-    pkl_ext_name = create_pickle_extension_name(predict_sentiment, predict_neutral_class)
+    pkl_ext_name = create_extension_name(predict_sentiment, predict_neutral_class)
     pkl_train_name = pickle_name_fold + "_train_" + pkl_ext_name
     pkl_valid_name = pickle_name_fold + "_valid_" + pkl_ext_name
     pkl_test_name = pickle_name_fold + "_test_" + pkl_ext_name

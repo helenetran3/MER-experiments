@@ -2,6 +2,61 @@ import os
 import csv
 
 
+def create_csv_path(model_name, filename, extension_name=""):
+    """
+    Create path to csv file.
+    
+    :param model_name: Name of the model
+    :param filename: Root name of the csv file
+    :param extension_name: Extension name for pickle
+    :return: Path to csv file.
+    """
+    # Create csv folder
+    model_csv_folder = os.path.join('models_tested', model_name, 'csv')
+    if not os.path.isdir(model_csv_folder):
+        os.mkdir(model_csv_folder)
+
+    # Create filename
+    csv_path = os.path.join(model_csv_folder, "{}{}.csv".format(filename, extension_name))
+
+    return csv_path
+
+
+def get_num_rows_csv(csv_path):
+    """
+    Get the number of rows in csv file.
+
+    :param csv_path: Path to csv file
+    :return:
+    """
+
+    with open(csv_path, 'r') as f:
+        reader = csv.reader(f)
+        lines = len(list(reader))
+
+    return lines
+
+
+def write_csv(csv_path, header, data_to_save):
+    """
+    Write data in csv file.
+
+    :param csv_path: Path to csv file
+    :param header: List of headers for the csv file
+    :param data_to_save: Lists of values to add (one row of the csv file)
+    """
+    if os.path.exists(csv_path):
+        with open(csv_path, 'a+', newline='') as f:  # Open file in append mode
+            writer = csv.writer(f)
+            writer.writerow(data_to_save)
+
+    else:
+        with open(csv_path, 'w', encoding='UTF8') as f:  # Create file
+            writer = csv.writer(f)
+            writer.writerow(header)
+            writer.writerow(data_to_save)
+
+
 def get_header_and_data(metrics, header_param, data_param, predict_neutral_class, task):
 
     header, data = None, None  # For initialisation
@@ -50,7 +105,7 @@ def get_header_and_data(metrics, header_param, data_param, predict_neutral_class
 def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
                              loss_function, loss_function_val, metrics_regression, metrics_score_coa,
                              metrics_presence, metrics_dominant, predict_neutral_class, threshold_emo_pres,
-                             pkl_ext_name):
+                             extension_name):
     """
     Save results of a single model to a csv file.
 
@@ -68,36 +123,17 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     :param metrics_dominant: List of metrics for detecting the dominant emotion(s)
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
-    :param pkl_ext_name: extension name for pickle object, info on whether we predict sentiment/neutral class
+    :param extension_name: extension name containing info on whether we predict sentiment/neutral class
     :return: One-line results added to the csv file.
     """
 
-    def write_csv(csv_path, header, data_to_save):
-        if os.path.exists(csv_path):
-            with open(csv_path, 'a+', newline='') as f:  # Open file in append mode
-                writer = csv.writer(f)
-                writer.writerow(data_to_save)
-
-        else:
-            with open(csv_path, 'w', encoding='UTF8') as f:  # Create file
-                writer = csv.writer(f)
-                writer.writerow(header)
-                writer.writerow(data_to_save)
-
-    # Create csv folder
-    model_csv_folder = os.path.join('models_tested', model_name, 'csv')
-    if not os.path.isdir(model_csv_folder):
-        os.mkdir(model_csv_folder)
-
     # Create filenames
-    csv_path_regression = os.path.join('models_tested', model_name, 'csv', "regression_{}.csv".format(pkl_ext_name))
-    csv_path_score_coa = os.path.join('models_tested', model_name, 'csv', "classification_score_coarse_{}.csv"
-                                      .format(pkl_ext_name))
-    csv_path_presence = [os.path.join('models_tested', model_name, 'csv', "classification_presence_t_{}_{}.csv"
-                                      .format(thres, pkl_ext_name))
-                         for thres in threshold_emo_pres]
-    csv_path_dominant = os.path.join('models_tested', model_name, 'csv', "classification_dominant_{}.csv"
-                                     .format(pkl_ext_name))
+    csv_path_regression = create_csv_path(model_name, filename="regression", extension_name=extension_name)
+    csv_path_score_coa = create_csv_path(model_name, filename="classification_score_coarse",
+                                         extension_name=extension_name)
+    csv_path_presence = [create_csv_path(model_name, filename="classification_presence_t_{}".format(thres),
+                                         extension_name=extension_name) for thres in threshold_emo_pres]
+    csv_path_dominant = create_csv_path(model_name, filename="classification_dominant", extension_name=extension_name)
 
     # Create model parameter header and data for each csv file
     header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', 'with_neutral_class',
@@ -126,3 +162,23 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     for path, data in zip(csv_path_presence, data_presence):
         write_csv(path, header_presence, data)
     write_csv(csv_path_dominant, header_dominant, data_dominant)
+
+
+def save_model_param_in_csv_file(model_training_param, model_archi_param, model_archi_header, model_name):
+    """
+    Create a csv file which lists the model ids and model architecture/training parameters.
+
+    :param model_training_param: List of parameters for model training
+    :param model_archi_param: List of parameters for model architecture
+    :param model_archi_header: List of strings giving the headers for model architecture
+    :param model_name: Name of the model
+    """
+    csv_path = create_csv_path(model_name, "model_ids")
+
+    model_id = get_num_rows_csv(csv_path) if os.path.exists(csv_path) else 1
+    model_training_header = ['num_epochs', 'patience', 'batch_size', 'fixed_num_steps', 'loss_function',
+                             'learning_rate', 'val_metric', 'predict_neutral_class']
+    header_all = ['model_id'] + model_archi_header + model_training_header
+    param_all = [model_id] + model_archi_param + model_training_param
+
+    write_csv(csv_path, header_all, param_all)

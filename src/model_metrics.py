@@ -238,7 +238,7 @@ def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, th
     for i, thres in enumerate(threshold_emo_pres):
         conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i],
                                                   labels=list(range(num_classes)))
-        save_with_pickle(conf_matrix, 'conf_matrix_t_{}_{}'.format(thres, parameters_name), root_folder=model_folder)
+        save_with_pickle(conf_matrix, 'conf_matrix_t_{}{}'.format(thres, parameters_name), root_folder=model_folder)
 
 
 def get_and_print_all_metrics(true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,

@@ -110,8 +110,8 @@ def train_model(train_list, valid_list, test_list,
         os.mkdir('models_tested')
     if not os.path.isdir(model_folder):
         os.mkdir(model_folder)
-    parameter_name = "l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
-    model_save_name = "model_{}.h5".format(parameter_name)
+    parameter_name = "_l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
+    model_save_name = "model{}.h5".format(parameter_name)
     model_save_path = os.path.join(model_folder, model_save_name)
 
     # Parameters for metric monitoring
@@ -170,4 +170,4 @@ def train_model(train_list, valid_list, test_list,
                         validation_steps=num_valid_samples // batch_size,
                         callbacks=[checkpoint, early_stopping])
 
-    save_with_pickle(history, "history_" + parameter_name, root_folder=model_folder)
+    save_with_pickle(history, "history" + parameter_name, root_folder=model_folder)
