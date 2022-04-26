@@ -9,6 +9,26 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
 
+def create_model_folder_and_path(model_name, model_id):
+    """
+    Create model folder and path to file containing model weights.
+
+    :param model_name: Name of the model
+    :param model_id: Model id (int)
+    :return: model_folder, model_save_path
+    """
+
+    model_folder = os.path.join('models_tested', model_name)
+    if not os.path.isdir('models_tested'):
+        os.mkdir('models_tested')
+    if not os.path.isdir(model_folder):
+        os.mkdir(model_folder)
+    model_save_name = "model_{}.h5".format(model_id)
+    model_save_path = os.path.join(model_folder, model_save_name)
+
+    return model_folder, model_save_path
+
+
 def build_model(num_features, num_classes, num_steps, num_layers, num_nodes, dropout_rate, final_activ):
     """
     Build the model described in the paper (cf. README for the reference).
@@ -62,7 +82,7 @@ def build_model(num_features, num_classes, num_steps, num_layers, num_nodes, dro
 def train_model(train_list, valid_list, test_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
-                val_metric, patience, model_name, predict_neutral_class):
+                val_metric, patience, model_name, predict_neutral_class, model_id):
     """
     Train the model.
 
@@ -83,6 +103,7 @@ def train_model(train_list, valid_list, test_list,
     :param patience: Number of epochs with no improvement after which the training will be stopped
     :param model_name: Name of the model currently tested
     :param predict_neutral_class: Whether we predict the neutral class
+    :param model_id: Model id (int)
     """
 
     x_train = train_list[0]
@@ -105,14 +126,7 @@ def train_model(train_list, valid_list, test_list,
                                    fixed_num_steps, train_mode=True)
 
     # Parameters to save model
-    model_folder = os.path.join('models_tested', model_name)
-    if not os.path.isdir('models_tested'):
-        os.mkdir('models_tested')
-    if not os.path.isdir(model_folder):
-        os.mkdir(model_folder)
-    parameter_name = "_l_{}_n_{}_d_{}_b_{}_s_{}".format(num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps)
-    model_save_name = "model{}.h5".format(parameter_name)
-    model_save_path = os.path.join(model_folder, model_save_name)
+    model_folder, model_save_path = create_model_folder_and_path(model_name, model_id)
 
     # Parameters for metric monitoring
     monitor = 'val_loss' if val_metric == 'loss' else 'val_accuracy'
@@ -147,6 +161,7 @@ def train_model(train_list, valid_list, test_list,
     print("Number of classes:", num_classes)
     print("Predict neutral class:", predict_neutral_class)
     print("\n>>> Model parameters")
+    print("Model id:", model_id)
     print("Model name:", model_name)
     print("Fixed number of steps:", fixed_num_steps)
     print("Number layers:", num_layers)
@@ -170,4 +185,4 @@ def train_model(train_list, valid_list, test_list,
                         validation_steps=num_valid_samples // batch_size,
                         callbacks=[checkpoint, early_stopping])
 
-    save_with_pickle(history, "history" + parameter_name, root_folder=model_folder)
+    save_with_pickle(history, "history_{}".format(model_id), root_folder=model_folder)

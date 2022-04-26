@@ -19,7 +19,7 @@ def create_array_true_scores(y_test, num_classes, model_folder, extension_name):
     :param y_test: List of arrays of shape (1, num_classes)
     :param num_classes: Number of classes
     :param model_folder: Name of the folder where the true_scores_all will be saved
-    :param extension_name: extension name for pickle object, info on whether we predict sentiment/neutral class
+    :param extension_name: extension name containing info on whether we predict sentiment/neutral class
     :return: true_scores_all
     """
 
@@ -129,7 +129,7 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param num_classes: number of classes (7 with neutral class, else 6)
-    :param extension_name: extension name for pickle object, info on whether we predict sentiment/neutral class
+    :param extension_name: extension name containing info on whether we predict sentiment/neutral class
     :param model_folder: The folder where the results will be saved
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
@@ -158,7 +158,7 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     return true_scores_coa, true_classes_pres, true_classes_dom
 
 
-def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, parameters_name,
+def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, model_id,
                         num_classes, model_folder):
     """
     Compute the prediction labels (all arrays of shape (test_size, 6), pred_classes_pres is a list of arrays of this type))
@@ -172,16 +172,16 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     the database)
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
-    :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param model_id: Model id (int)
     :param num_classes: number of classes (7 with neutral class, else 6)
     :param model_folder: The folder where the results will be saved
     :return: pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
     """
 
-    pred_sc_save_name = "pred_scores_all{}".format(parameters_name)
-    pred_sc_coa_save_name = "pred_scores_coarse{}".format(parameters_name)
-    pred_cl_pres_save_name = "pred_classes_pres{}".format(parameters_name)
-    pred_cl_dom_save_name = "pred_classes_dom{}".format(parameters_name)
+    pred_sc_save_name = "pred_scores_all_{}".format(model_id)
+    pred_sc_coa_save_name = "pred_scores_coarse_{}".format(model_id)
+    pred_cl_pres_save_name = "pred_classes_pres_{}".format(model_id)
+    pred_cl_dom_save_name = "pred_classes_dom_{}".format(model_id)
 
     # Get presence scores from raw predictions
     pred_scores_all = get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, num_classes)
@@ -200,19 +200,19 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     return pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
 
-def model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder):
+def model_prediction(model, test_dataset, num_test_samples, model_id, model_folder):
     """
     Return the predictions of the model on test dataset.
 
     :param model: The model to evaluate
     :param test_dataset: The TensorFlow dataset for test set
     :param num_test_samples: Number of test samples
-    :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param model_id: Model id (int)
     :param model_folder: The folder where the result will be saved
     :return: pred_raw: array giving the predictions of the model on test dataset.
     """
 
-    pred_raw_save_name = "pred_raw{}".format(parameters_name)
+    pred_raw_save_name = "pred_raw_{}".format(model_id)
 
     # Get raw score predictions from the model
     if not pickle_file_exists(pred_raw_save_name, root_folder=model_folder):  # perform prediction (for debugging)
@@ -225,8 +225,8 @@ def model_prediction(model, test_dataset, num_test_samples, parameters_name, mod
     return pred_raw
 
 
-def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
-                   model_name, predict_neutral_class, predict_sentiment, threshold_emo_pres, round_decimals,
+def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
+                   model_name, model_id, predict_neutral_class, threshold_emo_pres, round_decimals,
                    extension_name):
     """
     Evaluate the performance of the best model.
@@ -234,21 +234,20 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param test_list: [x_test, y_test, seg_test]
     :param batch_size: Batch size for training
     :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
-    :param num_layers: Number of bidirectional layers for the model
-    :param num_nodes: Number of nodes for the penultimate dense layer
-    :param dropout_rate: Dropout rate before each dense layer
+    # :param num_layers: Number of bidirectional layers for the model
+    # :param num_nodes: Number of nodes for the penultimate dense layer
+    # :param dropout_rate: Dropout rate before each dense layer
     :param loss_function: Loss function
     :param model_name: Name of the model currently tested
+    :param model_id: Model id (int)
     :param predict_neutral_class: Whether we predict the neutral class
-    :param predict_sentiment: Whether we predict the sentiment
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param round_decimals: Number of decimals to be rounded for metrics
+    :param extension_name: extension name containing info on whether we predict sentiment/neutral class
     """
 
     # Load best model
-    parameters_name = "{}_l_{}_n_{}_d_{}_b_{}_s_{}".format(extension_name, num_layers, num_nodes, dropout_rate,
-                                                           batch_size, fixed_num_steps)
-    model_save_name = "model{}.h5".format(parameters_name)
+    model_save_name = "model_{}.h5".format(model_id)
     model_folder = os.path.join('models_tested', model_name)
     model_save_path = os.path.join(model_folder, model_save_name)
     model = load_model(model_save_path)
@@ -272,14 +271,14 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                             model_folder)
 
     # Predicted labels
-    pred_raw = model_prediction(model, test_dataset, num_test_samples, parameters_name, model_folder)
+    pred_raw = model_prediction(model, test_dataset, num_test_samples, model_id, model_folder)
     pred_scores, pred_scores_coa, pred_classes_pres, pred_classes_dom = \
-        compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, parameters_name,
+        compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, threshold_emo_pres, model_id,
                             num_classes, model_folder)
 
     # Confusion matrix
     compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, threshold_emo_pres, num_classes,
-                                        parameters_name, model_folder)
+                                        model_id, model_folder)
 
     # Model evaluation
     loss_function_val = compute_loss_value(model, test_dataset, loss_function, round_decimals)

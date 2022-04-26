@@ -220,7 +220,7 @@ def get_classification_metrics(true_classes, pred_classes, num_classes, round_de
 
 
 def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, threshold_emo_pres, num_classes,
-                                        parameters_name, model_folder):
+                                        model_id, model_folder):
     """
     Compute the multilabel confusion matrix for each emotion (whether the emotion is present or not).
     Pickle file generated.
@@ -230,7 +230,7 @@ def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, th
     :param pred_classes_pres: List of arrays giving the emotions present predicted by the model (varying thresholds)
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param num_classes: number of classes (7 with neutral class, else 6)
-    :param parameters_name: String describing the model training parameters (used to append to the pickle object name)
+    :param model_id: Model id (int)
     :param model_folder: The folder where the results will be saved
     :return:
     """
@@ -238,7 +238,7 @@ def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, th
     for i, thres in enumerate(threshold_emo_pres):
         conf_matrix = multilabel_confusion_matrix(true_classes_pres[i], pred_classes_pres[i],
                                                   labels=list(range(num_classes)))
-        save_with_pickle(conf_matrix, 'conf_matrix_t_{}{}'.format(thres, parameters_name), root_folder=model_folder)
+        save_with_pickle(conf_matrix, 'conf_matrix_{}_t_{}'.format(model_id, thres), root_folder=model_folder)
 
 
 def get_and_print_all_metrics(true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,

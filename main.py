@@ -80,20 +80,6 @@ def main():
                                                      args.pickle_name_fold, args.predict_sentiment,
                                                      args.predict_neutral_class)
 
-    # Model training
-    train_model(train_list, valid_list, test_list,
-                args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers, args.num_nodes,
-                args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function, args.val_metric,
-                args.patience, args.model_name, args.predict_neutral_class)
-
-    extension_name = create_extension_name(args.predict_sentiment, args.predict_neutral_class)
-
-    # Model evaluation
-    loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
-        evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.num_layers, args.num_nodes,
-                       args.dropout_rate, args.loss_function, args.model_name, args.predict_neutral_class,
-                       args.predict_sentiment, args.threshold_emo_present, args.round_decimals, extension_name)
-
     # Save model parameters
     model_archi_param = [args.model_name, args.num_layers, args.num_nodes, args.dropout_rate, args.final_activ]
     model_archi_header = ['model_name', 'num_layers', 'num_nodes', 'dropout_rate', 'final_activ']
@@ -101,6 +87,19 @@ def main():
                                             args.batch_size, args.fixed_num_steps, args.loss_function,
                                             args.learning_rate, args.val_metric, args.predict_neutral_class,
                                             args.model_name)
+
+    extension_name = create_extension_name(args.predict_sentiment, args.predict_neutral_class)
+
+    # Model training
+    train_model(train_list, valid_list, test_list,
+                args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers, args.num_nodes,
+                args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function, args.val_metric,
+                args.patience, args.model_name, args.predict_neutral_class, model_id)
+
+    # Model evaluation
+    loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
+        evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.loss_function, args.model_name, model_id,
+                       args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, extension_name)
 
     # Save metrics in csv file
     save_results_in_csv_file(args.model_name, model_id, args.loss_function, loss_function_val,

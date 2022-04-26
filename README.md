@@ -81,14 +81,14 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
    2. **Running main.py in the command line:**
 
     ```commandline
-    usage: main.py [-h] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD] [-t] [-al] [-c]
-                   [-v {loss,acc}] [-f {facet,openface}] [-b BATCH_SIZE]
-                   [-s FIXED_NUM_STEPS] [-l {1,2,3}] [-n NUM_NODES] [-d DROPOUT_RATE]
-                   [-a FINAL_ACTIV] [-mn MODEL_NAME] [-e NUM_EPOCHS] [-p PATIENCE]
-                   [-lr LEARNING_RATE] [-lf LOSS_FUNCTION] [-nc] [-emo]
-                   [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
-                   [-rd ROUND_DECIMALS]
-    
+    usage: main.py [-h] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD] [-t] [-al]
+               [-f {facet,openface}] [-c] [-mn MODEL_NAME] [-l {1,2,3}]
+               [-n NUM_NODES] [-d DROPOUT_RATE] [-a FINAL_ACTIV] [-e NUM_EPOCHS]
+               [-p PATIENCE] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-lf LOSS_FUNCTION]
+               [-lr LEARNING_RATE] [-v {loss,acc}] [-nc] [-emo]
+               [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
+               [-rd ROUND_DECIMALS]
+
     SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.
     
     optional arguments:
@@ -102,18 +102,13 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
       -t, --align_to_text   Data will be aligned to the textual modality.
       -al, --append_label_to_data
                             Append annotations to the dataset.
-      -c, --with_custom_split
-                            Perform custom split on training and validation sets (for more
-                            details, cf. Williams et al. (2018) paper).
-      -v {loss,acc}, --val_metric {loss,acc}
-                            Metric to monitor for validation set. Values: loss or acc.
       -f {facet,openface}, --image_feature {facet,openface}
                             Image features. Values: facet or openface.
-      -b BATCH_SIZE, --batch_size BATCH_SIZE
-                            Batch size
-      -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
-                            Number of steps to fix for all sequences. Set to 0 if you want
-                            to keep the original number of steps.
+      -c, --with_custom_split
+                            Perform custom split on training and validation sets (for more 
+                            details, cf. Williams et al. (2018) paper).
+      -mn MODEL_NAME, --model_name MODEL_NAME
+                            Name of the model currently tested.
       -l {1,2,3}, --num_layers {1,2,3}
                             Number of bidirectional layers. Values between 1 and 3.
       -n NUM_NODES, --num_nodes NUM_NODES
@@ -122,29 +117,33 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
                             Dropout rate
       -a FINAL_ACTIV, --final_activ FINAL_ACTIV
                             Activation function of the final layer.
-      -mn MODEL_NAME, --model_name MODEL_NAME
-                            Name of the model currently tested.
       -e NUM_EPOCHS, --num_epochs NUM_EPOCHS
                             Maximum number of epochs
       -p PATIENCE, --patience PATIENCE
                             Number of epochs with no improvement after which the training
                             will be stopped.
-      -lr LEARNING_RATE, --learning_rate LEARNING_RATE
-                            Learning rate
+      -b BATCH_SIZE, --batch_size BATCH_SIZE
+                            Batch size
+      -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
+                            Number of steps to fix for all sequences. Set to 0 if you
+                            want to keep the original number of steps.
       -lf LOSS_FUNCTION, --loss_function LOSS_FUNCTION
                             Loss function
+      -lr LEARNING_RATE, --learning_rate LEARNING_RATE
+                            Learning rate
+      -v {loss,acc}, --val_metric {loss,acc}
+                            Metric to monitor for validation set. Values: loss or acc.
       -nc, --predict_neutral_class
                             Predict neutral class.
       -emo, --predict_sentiment
                             Predict sentiment in addition to emotions.
-      -tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...], 
-      --threshold_emo_present THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]
-                            Threshold at which emotions are considered to be present. Values
-                            must be between 0 and 3. Note that setting thresholds greater
-                            than 0 might lead to no positive true and predicted classes and
-                            skew classification metrics (F1, precision, recall).
-      -rd ROUND_DECIMALS, --round_decimals ROUND_DECIMALS
-                            Number of decimals to be rounded for metrics.
+      -tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...], --threshold_emo_present 
+          THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]
+                            Threshold at which emotions are considered to be present.
+                            Values must be between 0 and 3. Note that setting thresholds
+                            greater than 0 might lead to no positive true and predicted
+                            classes and skew classification metrics (F1, precision,
+                            recall).
 
     ```
 
@@ -152,20 +151,24 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
 
 ## Outputs generated
 
-*All words in italics in this table below corresponds to a parameter that can be set (cf. previous section). 
-For the sake of clarity, we call:* 
-` param='l\_{num_layers}\_n\_{num_nodes}\_d\_{dropout_rate}\_b\_{batch_size}\_s\_{fixed_num_steps}'`
+All words in curly brackets except `model_id` is a parameter that can be set (cf. previous section). 
+`Model_id` is the model identifier: its parameter is shown in `model_ids.csv` file (cf. fourth row of the table).
 
-| Objects                        | Files                                                                                                                                                                                                                                                                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Folder                                           |
-|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|
-| Dataset                        | {*pickle_name_dataset*}.pkl                                                                                                                                                                                                                                               | mmdataset object obtained from CMU-MOSEI SDK                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | cmu_mosei/<br>pickle_files/                      |
-| Fold                           | {*pickle_name_fold*}_train.pkl <br> {*pickle_name_fold*}_valid.pkl <br> {*pickle_name_fold*}_test.pkl <br><br> *If the name ends with:<br>-_with_n: *annotations include the neutral class*<br>-_emo: *annotations only limited to the six emotions (sentiment excluded)* | Lists of 3 elements for training, validation, and test sets respectively: <br> - **features (x)**: list of arrays of shape (number steps, number features) for text/image/audio features (concatenated in this order) <br> - **labels (y)**: list of arrays of shape (1, 7) for the 7 emotions <br> - **segment ids (seg)**: list of ids of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'                                                                                                                                                                                                       | cmu_mosei/<br>pickle_files/                      |
-| Models                         | model\_{*param*}.h5                                                                                                                                                                                                                                                       | Best model with a given set of hyperparameters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | models_tested/<br>*model_name/*                  |
-| History                        | history_{*param*}.pkl                                                                                                                                                                                                                                                     | Model training history                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | models_tested/<br>*model_name/*<br>pickle_files/ |
-| True labels from test set      | true_scores_all.pkl <br> true_scores_coarse.pkl <br> true_classes_pres.pkl <br> true_classes_dom.pkl                                                                                                                                                                      | Arrays of shape (test size, number classes) with number of classes equal to 7 with the neutral class, or 6 without. <br> They represent the true labels with different granularity: <br> **scores_all**: presence scores provided by the annotations, with values among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3] <br> **scores_coarse**: presence scores with values among [0, 1, 2, 3] <br> **classes_pres**: binary array detecting the presence of an emotion (presence score > 0) <br> **classes_dom**: binary array identifying the dominant emotion(s) (the highest presence score) | models_tested/<br>*model_name/*<br>pickle_files/ |
-| Predicted labels from test set | pred_raw_{*param*}.pkl pred_scores_all_{*param*}.pkl <br> pred_scores_coarse_{*param*}.pkl <br> pred_classes_pres_{*param*}.pkl <br> pred_classes_dom_{*param*}.pkl                                                                                                       | The predicted presence scores or class. **pred_raw** gives the raw presence scores predicted by the model. For the rest, cf. description above done for "True labels from test set".                                                                                                                                                                                                                                                                                                                                                                                                                         | models_tested/<br>*model_name/*<br>pickle_files/ |
-| Confusion matrix               | conf_matrix_t_{thres}<br>\_{*model_name*}\_{*param*}.pkl                                                                                                                                                                                                                  | Multilabel confusion matrix based on the presence/absence of each emotion with a presence score threshold *thres*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | models_tested/<br>*model_name/*<br>pickle_files/ |
-| Metrics                        | regression.csv <br> classification_presence_t_{thres}.csv  <br> classification_dominant.csv <br><br> *If the name ends with* _with_n *, then the metrics also include the neutral class.*                                                                                 | CSV files with all the metrics: <br> **reg**: Regression metrics calculated from the closeness with the presence score <br> **classif_pres**: Classification metrics based on the presence/absence of an emotion (presence score >= thres) <br> **classif_dom**: Classification metrics based on identifying the dominant emotion(s) (the highest presence score)                                                                                                                                                                                                                                            | models_tested/<br>*model_name*/csv/              |
+Some pickle names have an extension: 
+- *_emo*: annotations only limited to the six emotions (sentiment excluded)
+- *_with_n*: annotations include the neutral class
+
+| Objects                        | Files                                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Folder                                           |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|
+| Dataset                        | `{pickle_name_dataset}.pkl`                                                                                                                                                             | mmdataset object obtained from CMU-MOSEI SDK                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | cmu_mosei/<br>pickle_files/                      |
+| Fold                           | `{pickle_name_fold}_train.pkl` <br> `{pickle_name_fold}_valid.pkl` <br> `{pickle_name_fold}_test.pkl`                                                                                   | Lists of 3 elements for training, validation, and test sets respectively: <br> - **features (x)**: list of arrays of shape (number steps, number features) for text/image/audio features (concatenated in this order) <br> - **labels (y)**: list of arrays of shape (1, 7) for the 7 emotions <br> - **segment ids (seg)**: list of ids of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'                                                                                                                                                                                                       | cmu_mosei/<br>pickle_files/                      |
+| Model ids                      | `model\_ids.csv`                                                                                                                                                                        | List of ids *model_id* for each model, with the model architecture and training parameters. Useful for identifying models when saving metrics in csv files (cf. **Metrics** row)                                                                                                                                                                                                                                                                                                                                                                                                                             | models_tested/<br>*model_name*/csv/              |
+| Models                         | `model\_{model_id}.h5`                                                                                                                                                                  | Best model with a given set of hyperparameters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | models_tested/<br>*model_name/*                  |
+| History                        | `history_{model_id}.pkl`                                                                                                                                                                | Model training history                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | models_tested/<br>*model_name/*<br>pickle_files/ |
+| True labels from test set      | `true_scores_all.pkl` <br> `true_scores_coarse.pkl` <br> `true_classes_pres.pkl` <br> `true_classes_dom.pkl`                                                                            | Arrays of shape (test size, number classes) with number of classes equal to 7 with the neutral class, or 6 without. <br> They represent the true labels with different granularity: <br> **scores_all**: presence scores provided by the annotations, with values among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3] <br> **scores_coarse**: presence scores with values among [0, 1, 2, 3] <br> **classes_pres**: binary array detecting the presence of an emotion (presence score > 0) <br> **classes_dom**: binary array identifying the dominant emotion(s) (the highest presence score) | models_tested/<br>*model_name/*<br>pickle_files/ |
+| Predicted labels from test set | `pred_raw_{model_id}.pkl` <br> `pred_scores_all_{model_id}.pkl` <br> `pred_scores_coarse_{model_id}.pkl` <br> `pred_classes_pres_{model_id}.pkl` <br> `pred_classes_dom_{model_id}.pkl` | The predicted presence scores or class. **pred_raw** gives the raw presence scores predicted by the model. For the rest, cf. description above done for "True labels from test set".                                                                                                                                                                                                                                                                                                                                                                                                                         | models_tested/<br>*model_name/*<br>pickle_files/ |
+| Confusion matrix               | `conf_matrix_{model_id}\_t\_{thres}.pkl`                                                                                                                                                | Multilabel confusion matrix based on the presence/absence of each emotion with a presence score threshold *thres*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | models_tested/<br>*model_name/*<br>pickle_files/ |
+| Metrics                        | `regression.csv` <br> `classification_score_coarse.csv`  <br> `classification_presence_t_{thres}.csv`  <br> `classification_dominant.csv`                                               | CSV files with all the metrics: <br> **regression**: Regression metrics calculated from the closeness with the presence score <br> **classification_score_coarse**: Classification metrics based on presence score (from 0 to 3) for each emotion <br> **classification_presence**: Classification metrics based on the presence/absence of an emotion (presence score >= thres) <br> **classification_dominant**: Classification metrics based on identifying the dominant emotion(s) (the highest presence score)                                                                                          | models_tested/<br>*model_name*/csv/              |
 
 [Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:
 
