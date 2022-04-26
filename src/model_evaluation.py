@@ -1,9 +1,7 @@
-import os
 import numpy as np
 
 from tensorflow.keras.models import load_model
 from src.pickle_functions import *
-from src.csv_functions import save_results_in_csv_file
 from src.dataset_utils import get_tf_dataset
 from src.model_metrics import get_and_print_all_metrics, compute_multilabel_confusion_matrix, compute_loss_value
 
@@ -25,11 +23,11 @@ def create_array_true_scores(y_test, num_classes, model_folder, extension_name):
     :return: true_scores_all
     """
 
-    if not pickle_file_exists("true_scores_all_" + extension_name, root_folder=model_folder):
+    if not pickle_file_exists("true_scores_all" + extension_name, root_folder=model_folder):
         true_scores_all = np.reshape(np.array(y_test), (-1, num_classes))
-        save_with_pickle(true_scores_all, "true_scores_all_" + extension_name, root_folder=model_folder)
+        save_with_pickle(true_scores_all, "true_scores_all" + extension_name, root_folder=model_folder)
     else:
-        true_scores_all = load_from_pickle("true_scores_all_" + extension_name, root_folder=model_folder)
+        true_scores_all = load_from_pickle("true_scores_all" + extension_name, root_folder=model_folder)
     return true_scores_all
 
 
@@ -136,13 +134,13 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-    if not pickle_file_exists("true_scores_coarse_" + extension_name, root_folder=model_folder):
+    if not pickle_file_exists("true_scores_coarse" + extension_name, root_folder=model_folder):
 
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
         true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, num_classes, coarse=True)
-        save_with_pickle(true_scores_coa, "true_scores_coarse_" + extension_name, root_folder=model_folder)
+        save_with_pickle(true_scores_coa, "true_scores_coarse" + extension_name, root_folder=model_folder)
 
         # Compute true classes: binary arrays of shape (4654, 6 or 7)
         true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
@@ -228,7 +226,8 @@ def model_prediction(model, test_dataset, num_test_samples, parameters_name, mod
 
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes, dropout_rate, loss_function,
-                   model_name, predict_neutral_class, predict_sentiment, threshold_emo_pres, round_decimals):
+                   model_name, predict_neutral_class, predict_sentiment, threshold_emo_pres, round_decimals,
+                   extension_name):
     """
     Evaluate the performance of the best model.
 
@@ -245,8 +244,6 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param round_decimals: Number of decimals to be rounded for metrics
     """
-
-    extension_name = create_extension_name(predict_sentiment, predict_neutral_class)
 
     # Load best model
     parameters_name = "{}_l_{}_n_{}_d_{}_b_{}_s_{}".format(extension_name, num_layers, num_nodes, dropout_rate,
@@ -293,7 +290,4 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, num_layers, num_nodes
                                   pred_raw, pred_scores_coa, pred_classes_pres, pred_classes_dom,
                                   threshold_emo_pres, num_classes, predict_neutral_class, round_decimals)
 
-    # Save metrics in csv file
-    save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
-                             loss_function, loss_function_val, metrics_regression, metrics_score_coa, metrics_presence,
-                             metrics_dominant, predict_neutral_class, threshold_emo_pres, extension_name)
+    return loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant

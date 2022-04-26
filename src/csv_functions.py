@@ -22,19 +22,23 @@ def create_csv_path(model_name, filename, extension_name=""):
     return csv_path
 
 
-def get_num_rows_csv(csv_path):
+def get_current_model_id(csv_path):
     """
-    Get the number of rows in csv file.
+    Get the current model id based on the number of rows in csv file.
 
     :param csv_path: Path to csv file
-    :return:
+    :return: model_id
     """
 
-    with open(csv_path, 'r') as f:
-        reader = csv.reader(f)
-        lines = len(list(reader))
+    def get_num_rows_csv():
+        with open(csv_path, 'r') as f:
+            reader = csv.reader(f)
+            lines = len(list(reader))
+        return lines
 
-    return lines
+    model_id = get_num_rows_csv() if os.path.exists(csv_path) else 1
+
+    return model_id
 
 
 def write_csv(csv_path, header, data_to_save):
@@ -102,7 +106,7 @@ def get_header_and_data(metrics, header_param, data_param, predict_neutral_class
     return header, data
 
 
-def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps,
+def save_results_in_csv_file(model_name, model_id,
                              loss_function, loss_function_val, metrics_regression, metrics_score_coa,
                              metrics_presence, metrics_dominant, predict_neutral_class, threshold_emo_pres,
                              extension_name):
@@ -110,11 +114,6 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     Save results of a single model to a csv file.
 
     :param model_name: Name of the model currently tested
-    :param num_layers: Number of bidirectional layers for the model
-    :param num_nodes: Number of nodes for the penultimate dense layer
-    :param dropout_rate: Dropout rate before each dense layer
-    :param batch_size: Batch size for training
-    :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
     :param loss_function: Loss function
     :param loss_function_val: Loss function obtained by the model
     :param metrics_regression: List of metrics for regression (w.r.t the presence scores)
@@ -136,10 +135,8 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     csv_path_dominant = create_csv_path(model_name, filename="classification_dominant", extension_name=extension_name)
 
     # Create model parameter header and data for each csv file
-    header_param = ['num_layers', 'num_nodes', 'dropout_rate', 'batch_size', 'fixed_num_steps', 'with_neutral_class',
-                    loss_function]
-    data_param = [num_layers, num_nodes, dropout_rate, batch_size, fixed_num_steps, predict_neutral_class,
-                  loss_function_val]
+    header_param = ['model_id', loss_function]
+    data_param = [model_id, loss_function_val]
 
     header_regression, data_regression = get_header_and_data(metrics_regression, header_param, data_param,
                                                              predict_neutral_class, task="regression")
@@ -164,21 +161,32 @@ def save_results_in_csv_file(model_name, num_layers, num_nodes, dropout_rate, ba
     write_csv(csv_path_dominant, header_dominant, data_dominant)
 
 
-def save_model_param_in_csv_file(model_training_param, model_archi_param, model_archi_header, model_name):
+def save_model_param_in_csv_file(model_archi_param, model_archi_header, num_epochs, patience, batch_size,
+                                 fixed_num_steps, loss_function, learning_rate, val_metric, predict_neutral_class,
+                                 model_name):
     """
     Create a csv file which lists the model ids and model architecture/training parameters.
 
-    :param model_training_param: List of parameters for model training
     :param model_archi_param: List of parameters for model architecture
     :param model_archi_header: List of strings giving the headers for model architecture
+    # :param num_layers: Number of bidirectional layers for the model
+    # :param num_nodes: Number of nodes for the penultimate dense layer
+    # :param dropout_rate: Dropout rate before each dense layer
+    :param batch_size: Batch size for training
+    :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
     :param model_name: Name of the model
+    :return: model id of the current model
     """
     csv_path = create_csv_path(model_name, "model_ids")
 
-    model_id = get_num_rows_csv(csv_path) if os.path.exists(csv_path) else 1
+    model_id = get_current_model_id(csv_path)
+    model_training_param = [num_epochs, patience, batch_size, fixed_num_steps, loss_function,
+                            learning_rate, val_metric, predict_neutral_class]
     model_training_header = ['num_epochs', 'patience', 'batch_size', 'fixed_num_steps', 'loss_function',
                              'learning_rate', 'val_metric', 'predict_neutral_class']
     header_all = ['model_id'] + model_archi_header + model_training_header
     param_all = [model_id] + model_archi_param + model_training_param
 
     write_csv(csv_path, header_all, param_all)
+
+    return model_id
