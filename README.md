@@ -81,14 +81,14 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
    2. **Running main.py in the command line:**
 
     ```commandline
-    usage: main.py [-h] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD] [-t] [-al]
-               [-f {facet,openface}] [-c] [-mn MODEL_NAME] [-l {1,2,3}]
-               [-n NUM_NODES] [-d DROPOUT_RATE] [-a FINAL_ACTIV] [-e NUM_EPOCHS]
-               [-p PATIENCE] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-lf LOSS_FUNCTION]
-               [-lr LEARNING_RATE] [-v {loss,acc}] [-nc] [-emo]
-               [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
-               [-rd ROUND_DECIMALS]
-
+     usage: main.py [-h] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD] [-t] [-al]
+                   [-f {facet,openface}] [-c] [-mn MODEL_NAME] [-l {1,2,3}] [-n NUM_NODES]
+                   [-d DROPOUT_RATE] [-a FINAL_ACTIV] [-e NUM_EPOCHS] [-p PATIENCE]
+                   [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-opt OPTIMIZER]
+                   [-lf LOSS_FUNCTION] [-lr LEARNING_RATE] [-v {loss,acc}] [-nc] [-emo]
+                   [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
+                   [-rd ROUND_DECIMALS] [-sp] [-scm]
+    
     SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.
     
     optional arguments:
@@ -125,8 +125,11 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
       -b BATCH_SIZE, --batch_size BATCH_SIZE
                             Batch size
       -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
-                            Number of steps to fix for all sequences. Set to 0 if you
-                            want to keep the original number of steps.
+                            Number of steps to fix for all sequences. Set to 0 if you want
+                            to keep the original number of steps.
+      -opt OPTIMIZER, --optimizer OPTIMIZER
+                            Optimizer for model training. Values: adam, sgd, adagrad,
+                            adadelta, rmsprop.
       -lf LOSS_FUNCTION, --loss_function LOSS_FUNCTION
                             Loss function
       -lr LEARNING_RATE, --learning_rate LEARNING_RATE
@@ -144,6 +147,12 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
                             greater than 0 might lead to no positive true and predicted
                             classes and skew classification metrics (F1, precision,
                             recall).
+      -rd ROUND_DECIMALS, --round_decimals ROUND_DECIMALS
+                            Number of decimals to be rounded for metrics.
+      -sp, --save_predictions
+                            Save predictions with pickle
+      -scm, --save_confusion_matrix
+                            Save confusion matrix with pickle
 
     ```
 
@@ -166,8 +175,8 @@ Some pickle names have an extension:
 | Models                         | `model\_{model_id}.h5`                                                                                                                                                                  | Best model with a given set of hyperparameters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | models_tested/<br>*model_name/*                  |
 | History                        | `history_{model_id}.pkl`                                                                                                                                                                | Model training history                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | models_tested/<br>*model_name/*<br>pickle_files/ |
 | True labels from test set      | `true_scores_all.pkl` <br> `true_scores_coarse.pkl` <br> `true_classes_pres.pkl` <br> `true_classes_dom.pkl`                                                                            | Arrays of shape (test size, number classes) with number of classes equal to 7 with the neutral class, or 6 without. <br> They represent the true labels with different granularity: <br> **scores_all**: presence scores provided by the annotations, with values among [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3] <br> **scores_coarse**: presence scores with values among [0, 1, 2, 3] <br> **classes_pres**: binary array detecting the presence of an emotion (presence score > 0) <br> **classes_dom**: binary array identifying the dominant emotion(s) (the highest presence score) | cmu_mosei/<br>pickle_files/                      |
-| Predicted labels from test set | `pred_raw_{model_id}.pkl` <br> `pred_scores_all_{model_id}.pkl` <br> `pred_scores_coarse_{model_id}.pkl` <br> `pred_classes_pres_{model_id}.pkl` <br> `pred_classes_dom_{model_id}.pkl` | The predicted presence scores or class. **pred_raw** gives the raw presence scores predicted by the model. For the rest, cf. description above done for "True labels from test set".                                                                                                                                                                                                                                                                                                                                                                                                                         | models_tested/<br>*model_name/*<br>pickle_files/ |
-| Confusion matrix               | `conf_matrix_{model_id}\_t\_{thres}.pkl`                                                                                                                                                | Multilabel confusion matrix based on the presence/absence of each emotion with a presence score threshold *thres*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | models_tested/<br>*model_name/*<br>pickle_files/ |
+| Predicted labels from test set | `pred_raw_{model_id}.pkl` <br> `pred_scores_all_{model_id}.pkl` <br> `pred_scores_coarse_{model_id}.pkl` <br> `pred_classes_pres_{model_id}.pkl` <br> `pred_classes_dom_{model_id}.pkl` | File generated with `--save_predictions` argument. <br> The predicted presence scores or class. **pred_raw** gives the raw presence scores predicted by the model. For the rest, cf. description above done for "True labels from test set".                                                                                                                                                                                                                                                                                                                                                                 | models_tested/<br>*model_name/*<br>pickle_files/ |
+| Confusion matrix               | `conf_matrix_{model_id}\_t\_{thres}.pkl`                                                                                                                                                | File generated with `--save_confusion_matrix` argument.<br> Multilabel confusion matrix based on the presence/absence of each emotion with a presence score threshold *thres*                                                                                                                                                                                                                                                                                                                                                                                                                                | models_tested/<br>*model_name/*<br>pickle_files/ |
 | Metrics                        | `regression.csv` <br> `classification_score_coarse.csv`  <br> `classification_presence_t_{thres}.csv`  <br> `classification_dominant.csv`                                               | CSV files with all the metrics: <br> **regression**: Regression metrics calculated from the closeness with the presence score <br> **classification_score_coarse**: Classification metrics based on presence score (from 0 to 3) for each emotion <br> **classification_presence**: Classification metrics based on the presence/absence of an emotion (presence score >= thres) <br> **classification_dominant**: Classification metrics based on identifying the dominant emotion(s) (the highest presence score)                                                                                          | models_tested/<br>*model_name*/csv/              |
 
 [Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:

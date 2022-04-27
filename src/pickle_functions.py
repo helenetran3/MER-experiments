@@ -27,11 +27,8 @@ def save_with_pickle(obj_to_save, pickle_name, root_folder):
     """
 
     pickle_folder = os.path.join(root_folder, "pickle_files")
-
-    if not os.path.isdir(root_folder):
-        os.mkdir(root_folder)
     if not os.path.isdir(pickle_folder):
-        os.mkdir(pickle_folder)
+        os.makedirs(pickle_folder)
 
     pickle_name += ".pkl"
     pickle_path = os.path.join(root_folder, "pickle_files", pickle_name)

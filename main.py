@@ -56,6 +56,10 @@ parser.add_argument('-tp', '--threshold_emo_present', type=float, nargs='+',
                          "classes and skew classification metrics (F1, precision, recall).")
 parser.add_argument('-rd', '--round_decimals', type=int,
                     help="Number of decimals to be rounded for metrics.")
+parser.add_argument('-sp', '--save_predictions', action='store_true',
+                    help="Save predictions with pickle")
+parser.add_argument('-scm', '--save_confusion_matrix', action='store_true',
+                    help="Save confusion matrix with pickle")
 args = parser.parse_args()
 
 
@@ -104,7 +108,8 @@ def main():
     # Model evaluation
     loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
         evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.loss_function, args.model_name, model_id,
-                       args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, extension_name)
+                       args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, extension_name,
+                       args.save_predictions, args.save_confusion_matrix)
 
     # Save metrics in csv file
     save_results_in_csv_file(args.model_name, model_id, args.loss_function, loss_function_val,

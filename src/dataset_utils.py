@@ -292,11 +292,11 @@ def update_folds(train_list, valid_list, test_list, pickle_name_fold, predict_se
         return fold_list_res
 
     pkl_ext_name = create_extension_name(predict_sentiment, predict_neutral_class)
-    pkl_train_name = pickle_name_fold + "_train_" + pkl_ext_name
-    pkl_valid_name = pickle_name_fold + "_valid_" + pkl_ext_name
-    pkl_test_name = pickle_name_fold + "_test_" + pkl_ext_name
+    pkl_train_name = pickle_name_fold + "_train" + pkl_ext_name
+    pkl_valid_name = pickle_name_fold + "_valid" + pkl_ext_name
+    pkl_test_name = pickle_name_fold + "_test" + pkl_ext_name
 
-    if pickle_file_exists(pickle_name_fold + "_train_" + pkl_ext_name, root_folder):
+    if pickle_file_exists(pickle_name_fold + "_train" + pkl_ext_name, root_folder):
         train_list = load_from_pickle(pkl_train_name, root_folder)
         valid_list = load_from_pickle(pkl_valid_name, root_folder)
         test_list = load_from_pickle(pkl_test_name, root_folder)

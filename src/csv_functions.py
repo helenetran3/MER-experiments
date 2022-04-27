@@ -14,7 +14,7 @@ def create_csv_path(model_name, filename, extension_name=""):
     # Create csv folder
     model_csv_folder = os.path.join('models_tested', model_name, 'csv')
     if not os.path.isdir(model_csv_folder):
-        os.mkdir(model_csv_folder)
+        os.makedirs(model_csv_folder)
 
     # Create filename
     csv_path = os.path.join(model_csv_folder, "{}{}.csv".format(filename, extension_name))

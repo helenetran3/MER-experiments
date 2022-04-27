@@ -232,7 +232,6 @@ def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, th
     :param num_classes: number of classes (7 with neutral class, else 6)
     :param model_id: Model id (int)
     :param model_folder: The folder where the results will be saved
-    :return:
     """
 
     for i, thres in enumerate(threshold_emo_pres):
