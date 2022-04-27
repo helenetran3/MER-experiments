@@ -2,18 +2,17 @@ import os.path
 
 from src.pickle_functions import save_with_pickle
 from src.dataset_utils import get_tf_dataset
+from src.models import ef_williams
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam, SGD, Adagrad, Adadelta, RMSprop
 
 
-def get_optimizer(optimizer):
+def get_optimizer(optimizer_str):
     """
     Get TensorFlow optimizer from string.
 
-    :param optimizer: string
+    :param optimizer_str: string
     :return: TensorFlow optimizer
     """
 
@@ -25,11 +24,40 @@ def get_optimizer(optimizer):
         'rmsprop': RMSprop
     }
 
-    if optimizer.lower() in opt_dict.keys():
-        return opt_dict[optimizer]
+    if optimizer_str.lower() in opt_dict.keys():
+        return opt_dict[optimizer_str]
     else:
         raise ValueError("Optimizer name '{}' not valid. Please choose among Adam, SGD, Adagrad, Adadelta and RMSprop."
-                         .format(optimizer))
+                         .format(optimizer_str))
+
+
+def get_model(model_str, model_id, num_features, num_classes, fixed_num_steps, num_layers, num_nodes, dropout_rate,
+              final_activ):
+    """
+    Get model class from string.
+
+    :param model_str: string
+    :param model_id: Model id (int)
+    :param num_features: Number of features
+    :param num_classes: Number of classes
+    :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
+    :param num_layers: Number of bidirectional layers for the model
+    :param num_nodes: Number of nodes for the penultimate dense layer
+    :param dropout_rate: Dropout rate before each dense layer
+    :param final_activ: Final activation function
+    :return: Model class
+    """
+
+    model_dict = {
+        'ef_williams': ef_williams.Model(model_id, num_features, num_classes, fixed_num_steps, num_layers, num_nodes,
+                                         dropout_rate, final_activ)
+    }
+
+    if model_str.lower() in model_dict.keys():
+        return model_dict[model_str]
+
+    else:
+        raise ValueError("Model name '{}' not valid. Please choose among ef_williams.".format(model_str))
 
 
 def create_model_folder_and_path(model_name, model_id):
@@ -48,56 +76,6 @@ def create_model_folder_and_path(model_name, model_id):
     model_save_path = os.path.join(model_folder, model_save_name)
 
     return model_folder, model_save_path
-
-
-def build_model(num_features, num_classes, num_steps, num_layers, num_nodes, dropout_rate, final_activ):
-    """
-    Build the model described in the paper (cf. README for the reference).
-    Works only when the number of steps is the same for all datapoints.
-
-    :param num_features: feature vector size (it should be the same at each step)
-    :param num_classes: number of classes to predict
-    :param num_steps: number of steps in the sequence
-    :param num_layers: number of bidirectional layers
-    :param num_nodes: number of nodes for the penultimate dense layer
-    :param dropout_rate: dropout rate before each dense layer
-    :param final_activ: final activation function
-    :return: the model built
-    """
-
-    model = Sequential()
-
-    if num_layers == 1:
-        model.add(BatchNormalization(input_shape=(num_steps, num_features)))
-        model.add(Bidirectional(LSTM(64)))
-        model.add(Dropout(dropout_rate))
-        model.add(Dense(num_nodes, activation="relu"))
-        model.add(Dropout(dropout_rate))
-        model.add(Dense(num_classes, activation=final_activ))
-
-    if num_layers == 2:
-        model.add(BatchNormalization(input_shape=(num_steps, num_features)))
-        model.add(Bidirectional(LSTM(64, return_sequences=True, input_shape=(num_steps, num_features))))
-        model.add(Dropout(dropout_rate))
-        model.add(Bidirectional(LSTM(64)))
-        model.add(Dropout(dropout_rate))
-        model.add(Dense(num_nodes, activation="relu"))
-        model.add(Dropout(dropout_rate))
-        model.add(Dense(num_classes, activation=final_activ))
-
-    if num_layers == 3:
-        model.add(BatchNormalization(input_shape=(num_steps, num_features)))
-        model.add(Bidirectional(LSTM(64, return_sequences=True, input_shape=(num_steps, num_features))))
-        model.add(Dropout(dropout_rate))
-        model.add(Bidirectional(LSTM(64, return_sequences=True, input_shape=(num_steps, num_features))))
-        model.add(Dropout(dropout_rate))
-        model.add(Bidirectional(LSTM(64)))
-        model.add(Dropout(dropout_rate))
-        model.add(Dense(num_nodes, activation="relu"))
-        model.add(Dropout(dropout_rate))
-        model.add(Dense(num_classes, activation=final_activ))
-
-    return model
 
 
 def train_model(train_list, valid_list, test_list,
@@ -169,12 +147,11 @@ def train_model(train_list, valid_list, test_list,
 
     # Build model
     num_features = x_train[0].shape[1]
-    model = build_model(num_features, num_classes, fixed_num_steps, num_layers, num_nodes, dropout_rate, final_activ)
     optimizer_lr = optimizer_tf(learning_rate=learning_rate)
+    model_class = get_model(model_name, model_id, num_features, num_classes, fixed_num_steps, num_layers, num_nodes,
+                            dropout_rate, final_activ)
+    model = model_class.build()
     model.compile(loss=loss_function, optimizer=optimizer_lr)
-
-    print("\n\n")
-    print(model.summary())
 
     print("\n\n============================== Training Parameters ===========================================")
     print("\n>>> Dataset")
@@ -183,14 +160,6 @@ def train_model(train_list, valid_list, test_list,
     print("Number test datapoints: {} ({:.2f}%)".format(num_test_samples, 100 * (num_test_samples / total_data)))
     print("Number of classes:", num_classes)
     print("Predict neutral class:", predict_neutral_class)
-    print("\n>>> Model parameters")
-    print("Model id:", model_id)
-    print("Model name:", model_name)
-    print("Fixed number of steps:", fixed_num_steps)
-    print("Number layers:", num_layers)
-    print("Number nodes for the penultimate dense layer:", num_nodes)
-    print("Dropout rate:", dropout_rate)
-    print("Final activation:", final_activ)
     print("\n>>> Model training")
     print("Batch size:", batch_size)
     print("Number epochs:", num_epochs)
@@ -199,6 +168,10 @@ def train_model(train_list, valid_list, test_list,
     print("Optimizer:", optimizer_name)
     print("Loss function:", loss_function)
     print("Metric to monitor on validation data:", val_metric)
+    print("\n>>> Model parameters")
+    model_class.print_values()
+    print("\n")
+    print(model.summary())
 
     print("\n\n================================= Model Training =============================================\n")
     history = model.fit(x=train_dataset,

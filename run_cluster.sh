@@ -19,7 +19,7 @@ python3 main.py \
 --align_to_text \
 --append_label_to_data \
 --image_feature facet \
---model_name MultimodalDNN \
+--model_name ef_williams \
 --num_layers 1 \
 --num_nodes 100 \
 --dropout_rate 0.2 \

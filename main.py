@@ -20,9 +20,9 @@ parser.add_argument('-c', '--with_custom_split', action='store_true',
                     help="Perform custom split on training and validation sets (for more details, cf. Williams et al. "
                          "(2018) paper).")
 parser.add_argument('-mn', '--model_name', type=str,
-                    help="Name of the model currently tested.")
-parser.add_argument('-l', '--num_layers', type=int, choices=range(1, 4),
-                    help="Number of bidirectional layers. Values between 1 and 3.")
+                    help="Name of the model currently tested. Values: ef_williams.")
+parser.add_argument('-l', '--num_layers', type=int,
+                    help="Number of bidirectional layers.")
 parser.add_argument('-n', '--num_nodes', type=int,
                     help="Number of nodes in the penultimate dense layer.")
 parser.add_argument('-d', '--dropout_rate', type=float,

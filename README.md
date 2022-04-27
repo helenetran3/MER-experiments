@@ -82,13 +82,13 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
 
     ```commandline
      usage: main.py [-h] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD] [-t] [-al]
-                   [-f {facet,openface}] [-c] [-mn MODEL_NAME] [-l {1,2,3}] [-n NUM_NODES]
-                   [-d DROPOUT_RATE] [-a FINAL_ACTIV] [-e NUM_EPOCHS] [-p PATIENCE]
-                   [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-opt OPTIMIZER]
-                   [-lf LOSS_FUNCTION] [-lr LEARNING_RATE] [-v {loss,acc}] [-nc] [-emo]
-                   [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
-                   [-rd ROUND_DECIMALS] [-sp] [-scm]
-    
+               [-f {facet,openface}] [-c] [-mn MODEL_NAME] [-l NUM_LAYERS]
+               [-n NUM_NODES] [-d DROPOUT_RATE] [-a FINAL_ACTIV] [-e NUM_EPOCHS]
+               [-p PATIENCE] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-opt OPTIMIZER]
+               [-lf LOSS_FUNCTION] [-lr LEARNING_RATE] [-v {loss,acc}] [-nc] [-emo]
+               [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
+               [-rd ROUND_DECIMALS] [-sp] [-scm]
+
     SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.
     
     optional arguments:
@@ -105,12 +105,12 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
       -f {facet,openface}, --image_feature {facet,openface}
                             Image features. Values: facet or openface.
       -c, --with_custom_split
-                            Perform custom split on training and validation sets (for more 
+                            Perform custom split on training and validation sets (for more
                             details, cf. Williams et al. (2018) paper).
       -mn MODEL_NAME, --model_name MODEL_NAME
-                            Name of the model currently tested.
-      -l {1,2,3}, --num_layers {1,2,3}
-                            Number of bidirectional layers. Values between 1 and 3.
+                            Name of the model currently tested. Values: ef_williams.
+      -l NUM_LAYERS, --num_layers NUM_LAYERS
+                            Number of bidirectional layers.
       -n NUM_NODES, --num_nodes NUM_NODES
                             Number of nodes in the penultimate dense layer.
       -d DROPOUT_RATE, --dropout_rate DROPOUT_RATE
@@ -185,7 +185,9 @@ Some pickle names have an extension:
 
 *The current code only runs the following model. We aim to add more models in this repository.*
 
-- Williams, J., Kleinegesse, S., Comanescu, R., & Radu, O. (2018, July). [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion](http://www.aclweb.org/anthology/W18-3302). In *Proceedings of Grand Challenge and Workshop on Human Multimodal Language (Challenge-HML)* (pp. 11-19). 
+Want to try one of the following models? Set `--model_name` parameter with the string value in bold.
+
+- **ef_williams**: Williams, J., Kleinegesse, S., Comanescu, R., & Radu, O. (2018, July). [Recognizing Emotions in Video Using Multimodal DNN Feature Fusion](http://www.aclweb.org/anthology/W18-3302). In *Proceedings of Grand Challenge and Workshop on Human Multimodal Language (Challenge-HML)* (pp. 11-19). 
    - Updated version of [Multimodal DNN](https://github.com/rhoposit/MultimodalDNN)
    - Use standard training, validation and test sets from CMU-MOSEI SDK (instead of using only training and validation sets 
 originally specified in the paper)
