@@ -128,11 +128,11 @@ def save_results_in_csv_file(model_name, model_id,
 
     # Create filenames
     csv_path_regression = create_csv_path(model_name, filename="regression", extension_name=extension_name)
-    csv_path_score_coa = create_csv_path(model_name, filename="classification_score_coarse",
+    csv_path_score_coa = create_csv_path(model_name, filename="classif_score_coa",
                                          extension_name=extension_name)
-    csv_path_presence = [create_csv_path(model_name, filename="classification_presence_t_{}".format(thres),
+    csv_path_presence = [create_csv_path(model_name, filename="classif_pres_t_{}".format(thres),
                                          extension_name=extension_name) for thres in threshold_emo_pres]
-    csv_path_dominant = create_csv_path(model_name, filename="classification_dominant", extension_name=extension_name)
+    csv_path_dominant = create_csv_path(model_name, filename="classif_dom", extension_name=extension_name)
 
     # Create model parameter header and data for each csv file
     header_param = ['model_id', loss_function]

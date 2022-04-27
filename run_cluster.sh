@@ -34,8 +34,8 @@ python3 main.py \
 --val_metric loss \
 --predict_neutral_class \
 --threshold_emo_present 0 0.5 1 \
---round_decimals 3
-#--save_confusion_matrix \
+--round_decimals 3 \
+--save_confusion_matrix
 #--save_predictions
 #--with_custom_split \
 #--predict_sentiment \

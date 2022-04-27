@@ -134,14 +134,14 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-    if not pickle_file_exists("true_scores_coarse" + extension_name, pickle_folder='processed_folds', root_folder='cmu_mosei'):
+    if not pickle_file_exists("true_scores_coa" + extension_name, pickle_folder='processed_folds', root_folder='cmu_mosei'):
 
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
         true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, num_classes,
                                                                     coarse=True)
-        save_with_pickle(true_scores_coa, "true_scores_coarse" + extension_name,
+        save_with_pickle(true_scores_coa, "true_scores_coa" + extension_name,
                          pickle_folder='processed_folds', root_folder='cmu_mosei')
 
         # Compute true classes: binary arrays of shape (4654, 6 or 7)
@@ -155,7 +155,7 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
                          pickle_folder='processed_folds', root_folder='cmu_mosei')
 
     else:
-        true_scores_coa = load_from_pickle("true_scores_coarse" + extension_name,
+        true_scores_coa = load_from_pickle("true_scores_coa" + extension_name,
                                            pickle_folder='processed_folds', root_folder='cmu_mosei')
         true_classes_pres = load_from_pickle("true_classes_pres" + extension_name,
                                              pickle_folder='processed_folds', root_folder='cmu_mosei')
@@ -199,7 +199,7 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
     if save_pred:
         save_with_pickle(pred_scores_all, "pred_scores_all_{}".format(model_id),
                          pickle_folder="predictions", root_folder=model_folder)
-        save_with_pickle(pred_scores_coa, "pred_scores_coarse_{}".format(model_id),
+        save_with_pickle(pred_scores_coa, "pred_scores_coa_{}".format(model_id),
                          pickle_folder="predictions", root_folder=model_folder)
         save_with_pickle(pred_classes_pres, "pred_classes_pres_{}".format(model_id),
                          pickle_folder="predictions", root_folder=model_folder)

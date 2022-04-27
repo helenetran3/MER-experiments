@@ -88,7 +88,7 @@ def main():
                                                      args.pickle_name_fold, args.predict_sentiment,
                                                      args.predict_neutral_class)
 
-    # Save model parameters
+    # Save model parameters and return model id
     model_archi_param = [args.model_name, args.num_layers, args.num_nodes, args.dropout_rate, args.final_activ]
     model_archi_header = ['model_name', 'num_layers', 'num_nodes', 'dropout_rate', 'final_activ']
     model_id = save_model_param_in_csv_file(model_archi_param, model_archi_header, args.num_epochs, args.patience,
