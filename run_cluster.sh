@@ -15,7 +15,7 @@
 
 python3 main.py \
 --pickle_name_dataset cmu_mosei_aligned_text_no_averaged \
---pickle_name_fold fold \
+--pickle_name_fold cmu_mosei \
 --align_to_text \
 --append_label_to_data \
 --image_feature facet \

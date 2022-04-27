@@ -11,25 +11,6 @@ from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 # COMPUTE TRUE/PREDICTED LABEL ARRAYS DERIVED FROM PRESENCE SCORES: ALL PRESENCE SCORES, COARSE PRESENCE SCORES,
 # BINARY CLASSIFICATION FOR EACH EMOTION, CLASSIFICATION OF DOMINANT EMOTIONS
 
-def create_array_true_scores(y_test, num_classes, model_folder, extension_name):
-    """
-    Return the true scores given by the database.
-    Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
-
-    :param y_test: List of arrays of shape (1, num_classes)
-    :param num_classes: Number of classes
-    :param model_folder: Name of the folder where the true_scores_all will be saved
-    :param extension_name: extension name containing info on whether we predict sentiment/neutral class
-    :return: true_scores_all
-    """
-
-    if not pickle_file_exists("true_scores_all" + extension_name, root_folder=model_folder):
-        true_scores_all = np.reshape(np.array(y_test), (-1, num_classes))
-        save_with_pickle(true_scores_all, "true_scores_all" + extension_name, root_folder=model_folder)
-    else:
-        true_scores_all = load_from_pickle("true_scores_all" + extension_name, root_folder=model_folder)
-    return true_scores_all
-
 
 def get_presence_score_from_finer_grained_val(pred_raw, true_scores_all, num_classes, coarse=False):
     """
@@ -116,8 +97,26 @@ def get_class_from_presence_score(score_array, with_neutral_class, threshold_emo
         return list_bin_array_emotions
 
 
-def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, extension_name,
-                        model_folder):
+def create_array_true_scores(y_test, num_classes, extension_name):
+    """
+    Return the true scores given by the database.
+    Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
+
+    :param y_test: List of arrays of shape (1, num_classes)
+    :param num_classes: Number of classes
+    :param extension_name: extension name containing info on whether we predict sentiment/neutral class
+    :return: true_scores_all
+    """
+
+    if not pickle_file_exists("true_scores_all" + extension_name, root_folder='cmu_mosei'):
+        true_scores_all = np.reshape(np.array(y_test), (-1, num_classes))
+        save_with_pickle(true_scores_all, "true_scores_all" + extension_name, root_folder='cmu_mosei')
+    else:
+        true_scores_all = load_from_pickle("true_scores_all" + extension_name, root_folder='cmu_mosei')
+    return true_scores_all
+
+
+def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, extension_name):
     """
     Compute the true labels (all arrays of shape (test_size, 6), true_classes_pres is a list of arrays of this type)
     true_scores_coa: Closest true score among [0, 1, 2, 3]
@@ -130,30 +129,29 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param num_classes: number of classes (7 with neutral class, else 6)
     :param extension_name: extension name containing info on whether we predict sentiment/neutral class
-    :param model_folder: The folder where the results will be saved
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-    if not pickle_file_exists("true_scores_coarse" + extension_name, root_folder=model_folder):
+    if not pickle_file_exists("true_scores_coarse" + extension_name, root_folder='cmu_mosei'):
 
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
         true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, num_classes, coarse=True)
-        save_with_pickle(true_scores_coa, "true_scores_coarse" + extension_name, root_folder=model_folder)
+        save_with_pickle(true_scores_coa, "true_scores_coarse" + extension_name, root_folder='cmu_mosei')
 
         # Compute true classes: binary arrays of shape (4654, 6 or 7)
         true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                           num_classes)
         true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                          num_classes, only_dominant=True)
-        save_with_pickle(true_classes_pres, "true_classes_pres" + extension_name, root_folder=model_folder)
-        save_with_pickle(true_classes_dom, "true_classes_dom" + extension_name, root_folder=model_folder)
+        save_with_pickle(true_classes_pres, "true_classes_pres" + extension_name, root_folder='cmu_mosei')
+        save_with_pickle(true_classes_dom, "true_classes_dom" + extension_name, root_folder='cmu_mosei')
 
     else:
-        true_scores_coa = load_from_pickle("true_scores_coarse" + extension_name, root_folder=model_folder)
-        true_classes_pres = load_from_pickle("true_classes_pres" + extension_name, root_folder=model_folder)
-        true_classes_dom = load_from_pickle("true_classes_dom" + extension_name, root_folder=model_folder)
+        true_scores_coa = load_from_pickle("true_scores_coarse" + extension_name, root_folder='cmu_mosei')
+        true_classes_pres = load_from_pickle("true_classes_pres" + extension_name, root_folder='cmu_mosei')
+        true_classes_dom = load_from_pickle("true_classes_dom" + extension_name, root_folder='cmu_mosei')
 
     return true_scores_coa, true_classes_pres, true_classes_dom
 
@@ -265,10 +263,9 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
                                   train_mode=False)
 
     # True labels
-    true_scores_all = create_array_true_scores(y_test, num_classes, model_folder, extension_name)
+    true_scores_all = create_array_true_scores(y_test, num_classes, extension_name)
     true_scores_coa, true_classes_pres, true_classes_dom = \
-        compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, extension_name,
-                            model_folder)
+        compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pres, num_classes, extension_name)
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, model_id, model_folder)
