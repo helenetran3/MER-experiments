@@ -68,10 +68,10 @@ def main():
     optimizer_tf = get_optimizer(args.optimizer)
 
     # Get data for training, validation and test sets from pickle (split provided by the SDK)
-    if pickle_file_exists(args.pickle_name_fold + "_train", root_folder="cmu_mosei"):
-        train_list = load_from_pickle(args.pickle_name_fold + "_train", root_folder="cmu_mosei")
-        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", root_folder="cmu_mosei")
-        test_list = load_from_pickle(args.pickle_name_fold + "_test", root_folder="cmu_mosei")
+    if pickle_file_exists(args.pickle_name_fold + "_train", pickle_folder="raw_folds", root_folder="cmu_mosei"):
+        train_list = load_from_pickle(args.pickle_name_fold + "_train", pickle_folder="raw_folds", root_folder="cmu_mosei")
+        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", pickle_folder="raw_folds", root_folder="cmu_mosei")
+        test_list = load_from_pickle(args.pickle_name_fold + "_test", pickle_folder="raw_folds", root_folder="cmu_mosei")
 
     else:
         # Load CMU-MOSEI dataset

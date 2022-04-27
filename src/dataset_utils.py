@@ -29,7 +29,7 @@ def download_dataset(pickle_name_dataset, align_to_text, append_label_to_data):
     """
 
     # The next two lines for safety. The function should be called only if the pickle obj does not exist
-    if pickle_file_exists(pickle_name_dataset, root_folder="cmu_mosei"):
+    if pickle_file_exists(pickle_name_dataset, pickle_folder="mmdataset", root_folder="cmu_mosei"):
         print("{} already exists in {} folder. Please change the pickle name.".format(pickle_name_dataset, "cmu_mosei"))
 
     else:
@@ -48,7 +48,7 @@ def download_dataset(pickle_name_dataset, align_to_text, append_label_to_data):
             cmu_mosei.align('All Labels')
 
         # Save cmu_mosei mmdataset with pickle
-        save_with_pickle(cmu_mosei, pickle_name_dataset, root_folder="cmu_mosei")
+        save_with_pickle(cmu_mosei, pickle_name_dataset, pickle_folder="mmdataset", root_folder="cmu_mosei")
 
 
 def get_dataset_from_sdk(pickle_name_dataset, align_to_text, append_label_to_data):
@@ -61,12 +61,12 @@ def get_dataset_from_sdk(pickle_name_dataset, align_to_text, append_label_to_dat
     :return: CMU-MOSEI mmdataset
     """
 
-    if not pickle_file_exists(pickle_name_dataset, root_folder="cmu_mosei"):
+    if not pickle_file_exists(pickle_name_dataset, pickle_folder="mmdataset", root_folder="cmu_mosei"):
         # Download from sdk and save with pickle
         download_dataset(pickle_name_dataset, align_to_text, append_label_to_data)
 
     # Get CMU-MOSEI mmdataset object from pickle
-    dataset = load_from_pickle(pickle_name_dataset, root_folder="cmu_mosei")
+    dataset = load_from_pickle(pickle_name_dataset, pickle_folder='mmdataset', root_folder="cmu_mosei")
     print("CMU-MOSEI dataset loaded from pickle.")
     print("The existing computational sequences in dataset are: {}".format(list(dataset.keys())))
 
@@ -246,9 +246,9 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     test_res = [x_test, y_test, seg_test]
 
     # Save lists with pickle
-    save_with_pickle(train_res, pickle_name_fold + "_train", root_folder="cmu_mosei")
-    save_with_pickle(valid_res, pickle_name_fold + "_valid", root_folder="cmu_mosei")
-    save_with_pickle(test_res, pickle_name_fold + "_test", root_folder="cmu_mosei")
+    save_with_pickle(train_res, pickle_name_fold + "_train", pickle_folder="raw_folds", root_folder="cmu_mosei")
+    save_with_pickle(valid_res, pickle_name_fold + "_valid", pickle_folder="raw_folds", root_folder="cmu_mosei")
+    save_with_pickle(test_res, pickle_name_fold + "_test", pickle_folder="raw_folds", root_folder="cmu_mosei")
 
     return train_res, valid_res, test_res
 
@@ -257,6 +257,7 @@ def update_folds(train_list, valid_list, test_list, pickle_name_fold, predict_se
     # TODO Verify the function
 
     root_folder = "cmu_mosei"
+    pickle_folder = "raw_folds"
 
     def keep_only_emotion_labels(fold_list):
         """
@@ -296,10 +297,10 @@ def update_folds(train_list, valid_list, test_list, pickle_name_fold, predict_se
     pkl_valid_name = pickle_name_fold + "_valid" + pkl_ext_name
     pkl_test_name = pickle_name_fold + "_test" + pkl_ext_name
 
-    if pickle_file_exists(pickle_name_fold + "_train" + pkl_ext_name, root_folder):
-        train_list = load_from_pickle(pkl_train_name, root_folder)
-        valid_list = load_from_pickle(pkl_valid_name, root_folder)
-        test_list = load_from_pickle(pkl_test_name, root_folder)
+    if pickle_file_exists(pickle_name_fold + "_train" + pkl_ext_name, pickle_folder, root_folder):
+        train_list = load_from_pickle(pkl_train_name, pickle_folder, root_folder)
+        valid_list = load_from_pickle(pkl_valid_name, pickle_folder, root_folder)
+        test_list = load_from_pickle(pkl_test_name, pickle_folder, root_folder)
     else:
         if not predict_sentiment:
             train_list = keep_only_emotion_labels(train_list)
@@ -311,9 +312,9 @@ def update_folds(train_list, valid_list, test_list, pickle_name_fold, predict_se
             valid_list = add_neutral_class(valid_list)
             test_list = add_neutral_class(test_list)
 
-        save_with_pickle(train_list, pkl_train_name, root_folder)
-        save_with_pickle(valid_list, pkl_valid_name, root_folder)
-        save_with_pickle(test_list, pkl_test_name, root_folder)
+        save_with_pickle(train_list, pkl_train_name, pickle_folder, root_folder)
+        save_with_pickle(valid_list, pkl_valid_name, pickle_folder, root_folder)
+        save_with_pickle(test_list, pkl_test_name, pickle_folder, root_folder)
 
     return train_list, valid_list, test_list
 

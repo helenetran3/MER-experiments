@@ -41,11 +41,9 @@ def create_model_folder_and_path(model_name, model_id):
     :return: model_folder, model_save_path
     """
 
-    model_folder = os.path.join('models_tested', model_name)
+    model_folder = os.path.join('models_tested', model_name, 'models')
     if not os.path.isdir('models_tested'):
-        os.mkdir('models_tested')
-    if not os.path.isdir(model_folder):
-        os.mkdir(model_folder)
+        os.makedirs(model_folder)
     model_save_name = "model_{}.h5".format(model_id)
     model_save_path = os.path.join(model_folder, model_save_name)
 
@@ -211,4 +209,5 @@ def train_model(train_list, valid_list, test_list,
                         validation_steps=num_valid_samples // batch_size,
                         callbacks=[checkpoint, early_stopping])
 
-    save_with_pickle(history, "history_{}".format(model_id), root_folder=model_folder)
+    model_folder = os.path.join("models_tested", model_name)
+    save_with_pickle(history, "history_{}".format(model_id), pickle_folder="history", root_folder=model_folder)

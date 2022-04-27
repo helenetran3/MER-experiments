@@ -108,11 +108,13 @@ def create_array_true_scores(y_test, num_classes, extension_name):
     :return: true_scores_all
     """
 
-    if not pickle_file_exists("true_scores_all" + extension_name, root_folder='cmu_mosei'):
+    if not pickle_file_exists("true_scores_all" + extension_name, pickle_folder='processed_folds', root_folder='cmu_mosei'):
         true_scores_all = np.reshape(np.array(y_test), (-1, num_classes))
-        save_with_pickle(true_scores_all, "true_scores_all" + extension_name, root_folder='cmu_mosei')
+        save_with_pickle(true_scores_all, "true_scores_all" + extension_name,
+                         pickle_folder='processed_folds', root_folder='cmu_mosei')
     else:
-        true_scores_all = load_from_pickle("true_scores_all" + extension_name, root_folder='cmu_mosei')
+        true_scores_all = load_from_pickle("true_scores_all" + extension_name,
+                                           pickle_folder='processed_folds', root_folder='cmu_mosei')
     return true_scores_all
 
 
@@ -132,26 +134,33 @@ def compute_true_labels(true_scores_all, predict_neutral_class, threshold_emo_pr
     :return: true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-    if not pickle_file_exists("true_scores_coarse" + extension_name, root_folder='cmu_mosei'):
+    if not pickle_file_exists("true_scores_coarse" + extension_name, pickle_folder='processed_folds', root_folder='cmu_mosei'):
 
         # Compute true presence scores: arrays of shape (4654, 7)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
-        true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, num_classes, coarse=True)
-        save_with_pickle(true_scores_coa, "true_scores_coarse" + extension_name, root_folder='cmu_mosei')
+        true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, true_scores_all, num_classes,
+                                                                    coarse=True)
+        save_with_pickle(true_scores_coa, "true_scores_coarse" + extension_name,
+                         pickle_folder='processed_folds', root_folder='cmu_mosei')
 
         # Compute true classes: binary arrays of shape (4654, 6 or 7)
         true_classes_pres = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                           num_classes)
         true_classes_dom = get_class_from_presence_score(true_scores_all, predict_neutral_class, threshold_emo_pres,
                                                          num_classes, only_dominant=True)
-        save_with_pickle(true_classes_pres, "true_classes_pres" + extension_name, root_folder='cmu_mosei')
-        save_with_pickle(true_classes_dom, "true_classes_dom" + extension_name, root_folder='cmu_mosei')
+        save_with_pickle(true_classes_pres, "true_classes_pres" + extension_name,
+                         pickle_folder='processed_folds', root_folder='cmu_mosei')
+        save_with_pickle(true_classes_dom, "true_classes_dom" + extension_name,
+                         pickle_folder='processed_folds', root_folder='cmu_mosei')
 
     else:
-        true_scores_coa = load_from_pickle("true_scores_coarse" + extension_name, root_folder='cmu_mosei')
-        true_classes_pres = load_from_pickle("true_classes_pres" + extension_name, root_folder='cmu_mosei')
-        true_classes_dom = load_from_pickle("true_classes_dom" + extension_name, root_folder='cmu_mosei')
+        true_scores_coa = load_from_pickle("true_scores_coarse" + extension_name,
+                                           pickle_folder='processed_folds', root_folder='cmu_mosei')
+        true_classes_pres = load_from_pickle("true_classes_pres" + extension_name,
+                                             pickle_folder='processed_folds', root_folder='cmu_mosei')
+        true_classes_dom = load_from_pickle("true_classes_dom" + extension_name,
+                                            pickle_folder='processed_folds', root_folder='cmu_mosei')
 
     return true_scores_coa, true_classes_pres, true_classes_dom
 
@@ -188,10 +197,14 @@ def compute_pred_labels(pred_raw, true_scores_all, predict_neutral_class, thresh
                                                      threshold_emo_pres, num_classes, only_dominant=True)
 
     if save_pred:
-        save_with_pickle(pred_scores_all, "pred_scores_all_{}".format(model_id), root_folder=model_folder)
-        save_with_pickle(pred_scores_coa, "pred_scores_coarse_{}".format(model_id), root_folder=model_folder)
-        save_with_pickle(pred_classes_pres, "pred_classes_pres_{}".format(model_id), root_folder=model_folder)
-        save_with_pickle(pred_classes_dom, "pred_classes_dom_{}".format(model_id), root_folder=model_folder)
+        save_with_pickle(pred_scores_all, "pred_scores_all_{}".format(model_id),
+                         pickle_folder="predictions", root_folder=model_folder)
+        save_with_pickle(pred_scores_coa, "pred_scores_coarse_{}".format(model_id),
+                         pickle_folder="predictions", root_folder=model_folder)
+        save_with_pickle(pred_classes_pres, "pred_classes_pres_{}".format(model_id),
+                         pickle_folder="predictions", root_folder=model_folder)
+        save_with_pickle(pred_classes_dom, "pred_classes_dom_{}".format(model_id),
+                         pickle_folder="predictions", root_folder=model_folder)
 
     return pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
@@ -213,7 +226,8 @@ def model_prediction(model, test_dataset, num_test_samples, save_pred, model_id,
     pred_raw = model.predict(test_dataset, verbose=1, steps=num_test_samples)  # (4654, num_classes)
 
     if save_pred:
-        save_with_pickle(pred_raw, "pred_raw_{}".format(model_id), root_folder=model_folder)
+        save_with_pickle(pred_raw, "pred_raw_{}".format(model_id),
+                         pickle_folder="predictions", root_folder=model_folder)
 
     return pred_raw
 
@@ -243,10 +257,9 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
     """
 
     # Load best model
-    model_save_name = "model_{}.h5".format(model_id)
     model_folder = os.path.join('models_tested', model_name)
-    model_save_path = os.path.join(model_folder, model_save_name)
-    model = load_model(model_save_path)
+    model_path = os.path.join(model_folder, 'models', "model_{}.h5".format(model_id))
+    model = load_model(model_path)
 
     # Extract x, y and seg_ids for test set
     x_test = test_list[0]  # each element of shape (29, 409)
