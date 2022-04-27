@@ -1,6 +1,6 @@
 from src.pickle_functions import pickle_file_exists, load_from_pickle, create_extension_name
 from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset, update_folds
-from src.model_training import train_model
+from src.model_training import train_model, get_optimizer
 from src.model_evaluation import evaluate_model
 from src.csv_functions import save_model_param_in_csv_file, save_results_in_csv_file
 import argparse
@@ -38,6 +38,8 @@ parser.add_argument('-b', '--batch_size', type=int,
 parser.add_argument('-s', '--fixed_num_steps', type=int,
                     help="Number of steps to fix for all sequences. Set to 0 if you want to keep the original number "
                          "of steps.")
+parser.add_argument('-opt', '--optimizer', type=str,
+                    help="Optimizer for model training. Values: adam, sgd, adagrad, adadelta, rmsprop.")
 parser.add_argument('-lf', '--loss_function', type=str,
                     help="Loss function")
 parser.add_argument('-lr', '--learning_rate', type=float,
@@ -58,6 +60,8 @@ args = parser.parse_args()
 
 
 def main():
+
+    optimizer_tf = get_optimizer(args.optimizer)
 
     # Get data for training, validation and test sets from pickle (split provided by the SDK)
     if pickle_file_exists(args.pickle_name_fold + "_train", root_folder="cmu_mosei"):
@@ -84,7 +88,7 @@ def main():
     model_archi_param = [args.model_name, args.num_layers, args.num_nodes, args.dropout_rate, args.final_activ]
     model_archi_header = ['model_name', 'num_layers', 'num_nodes', 'dropout_rate', 'final_activ']
     model_id = save_model_param_in_csv_file(model_archi_param, model_archi_header, args.num_epochs, args.patience,
-                                            args.batch_size, args.fixed_num_steps, args.loss_function,
+                                            args.batch_size, args.fixed_num_steps, args.optimizer, args.loss_function,
                                             args.learning_rate, args.val_metric, args.predict_neutral_class,
                                             args.model_name)
 
@@ -93,8 +97,9 @@ def main():
     # Model training
     train_model(train_list, valid_list, test_list,
                 args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers, args.num_nodes,
-                args.dropout_rate, args.final_activ, args.learning_rate, args.loss_function, args.val_metric,
-                args.patience, args.model_name, args.predict_neutral_class, model_id)
+                args.dropout_rate, args.final_activ, args.learning_rate, optimizer_tf, args.optimizer,
+                args.loss_function, args.val_metric, args.patience, args.model_name, args.predict_neutral_class,
+                model_id)
 
     # Model evaluation
     loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \

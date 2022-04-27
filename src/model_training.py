@@ -6,7 +6,30 @@ from src.dataset_utils import get_tf_dataset
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dropout, Dense, LSTM
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, SGD, Adagrad, Adadelta, RMSprop
+
+
+def get_optimizer(optimizer):
+    """
+    Get TensorFlow optimizer from string.
+
+    :param optimizer: string
+    :return: TensorFlow optimizer
+    """
+
+    opt_dict = {
+        'adam': Adam,
+        'sgd': SGD,
+        'adagrad': Adagrad,
+        'adadelta': Adadelta,
+        'rmsprop': RMSprop
+    }
+
+    if optimizer.lower() in opt_dict.keys():
+        return opt_dict[optimizer]
+    else:
+        raise ValueError("Optimizer name '{}' not valid. Please choose among Adam, SGD, Adagrad, Adadelta and RMSprop."
+                         .format(optimizer))
 
 
 def create_model_folder_and_path(model_name, model_id):
@@ -81,7 +104,7 @@ def build_model(num_features, num_classes, num_steps, num_layers, num_nodes, dro
 
 def train_model(train_list, valid_list, test_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
-                num_nodes, dropout_rate, final_activ, learning_rate, loss_function,
+                num_nodes, dropout_rate, final_activ, learning_rate, optimizer_tf, optimizer_name, loss_function,
                 val_metric, patience, model_name, predict_neutral_class, model_id):
     """
     Train the model.
@@ -98,6 +121,8 @@ def train_model(train_list, valid_list, test_list,
     :param dropout_rate: Dropout rate before each dense layer
     :param final_activ: Final activation function
     :param learning_rate: Learning rate for training
+    :param optimizer_tf: TensorFlow optimizer
+    :param optimizer_name: optimizer name
     :param loss_function: Loss function
     :param val_metric: Metric on validation data to monitor
     :param patience: Number of epochs with no improvement after which the training will be stopped
@@ -147,8 +172,8 @@ def train_model(train_list, valid_list, test_list,
     # Build model
     num_features = x_train[0].shape[1]
     model = build_model(num_features, num_classes, fixed_num_steps, num_layers, num_nodes, dropout_rate, final_activ)
-    optimizer = Adam(learning_rate=learning_rate)
-    model.compile(loss=loss_function, optimizer=optimizer)
+    optimizer_lr = optimizer_tf(learning_rate=learning_rate)
+    model.compile(loss=loss_function, optimizer=optimizer_lr)
 
     print("\n\n")
     print(model.summary())
@@ -173,6 +198,7 @@ def train_model(train_list, valid_list, test_list,
     print("Number epochs:", num_epochs)
     print("Patience:", patience)
     print("Learning rate:", learning_rate)
+    print("Optimizer:", optimizer_name)
     print("Loss function:", loss_function)
     print("Metric to monitor on validation data:", val_metric)
 

@@ -28,6 +28,7 @@ python3 main.py \
 --patience 1 \
 --batch_size 32 \
 --fixed_num_steps 45 \
+--optimizer adam \
 --loss_function mean_absolute_error \
 --learning_rate 0.001 \
 --val_metric loss \
