@@ -1,5 +1,6 @@
 import os
 import csv
+from src.models import ef_williams
 
 
 def create_csv_path(model_name, filename, extension_name=""):
@@ -59,9 +60,23 @@ def write_csv(csv_path, header, data_to_save):
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerow(data_to_save)
+            
+            
+def get_header_and_data_model(model_str, num_layers, num_nodes, dropout_rate, final_activ):
+
+    model_dict = {
+        'ef_williams': ef_williams
+    }
+
+    if model_str.lower() in model_dict.keys():
+        header, data = model_dict[model_str].data_for_csv(model_str, num_layers, num_nodes, dropout_rate, final_activ)
+    else:
+        raise ValueError("Model name '{}' not valid. Please choose among ef_williams.".format(model_str))
+
+    return header, data
 
 
-def get_header_and_data(metrics, header_param, data_param, predict_neutral_class, task):
+def get_header_and_data_metrics(metrics, header_param, data_param, predict_neutral_class, task):
 
     header, data = None, None  # For initialisation
 
@@ -138,14 +153,14 @@ def save_results_in_csv_file(model_name, model_id,
     header_param = ['model_id', loss_function]
     data_param = [model_id, loss_function_val]
 
-    header_regression, data_regression = get_header_and_data(metrics_regression, header_param, data_param,
-                                                             predict_neutral_class, task="regression")
-    header_score_coa, data_score_coa = get_header_and_data(metrics_score_coa, header_param, data_param,
-                                                           predict_neutral_class, task="score_coa")
-    header_presence, data_presence = get_header_and_data(metrics_presence, header_param, data_param,
-                                                         predict_neutral_class, task="presence")
-    header_dominant, data_dominant = get_header_and_data(metrics_dominant, header_param, data_param,
-                                                         predict_neutral_class, task="dominant")
+    header_regression, data_regression = get_header_and_data_metrics(metrics_regression, header_param, data_param,
+                                                                     predict_neutral_class, task="regression")
+    header_score_coa, data_score_coa = get_header_and_data_metrics(metrics_score_coa, header_param, data_param,
+                                                                   predict_neutral_class, task="score_coa")
+    header_presence, data_presence = get_header_and_data_metrics(metrics_presence, header_param, data_param,
+                                                                 predict_neutral_class, task="presence")
+    header_dominant, data_dominant = get_header_and_data_metrics(metrics_dominant, header_param, data_param,
+                                                                 predict_neutral_class, task="dominant")
 
     # print(len(header_regression), len(data_regression))
     # print(len(header_score_coa), len(data_score_coa))

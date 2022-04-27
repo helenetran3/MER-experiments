@@ -62,3 +62,11 @@ class Model:
         print("Number nodes for the penultimate dense layer:", self.num_nodes)
         print("Dropout rate:", self.dropout_rate)
         print("Final activation:", self.final_activ)
+
+
+def data_for_csv(model_name, num_layers, num_nodes, dropout_rate, final_activ):
+
+    data = [model_name, num_layers, num_nodes, dropout_rate, final_activ]
+    header = ['model_name', 'num_layers', 'num_nodes', 'dropout_rate', 'final_activ']
+
+    return header, data
