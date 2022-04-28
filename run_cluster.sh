@@ -39,3 +39,4 @@ python3 main.py \
 #--save_predictions
 #--with_custom_split \
 #--predict_sentiment \
+#--display_fig

@@ -7,7 +7,7 @@ def pickle_file_exists(pickle_name, pickle_folder, root_folder):
     Check whether a pickle file exists.
 
     :param pickle_name: name of the pickle object
-    :param pickle_folder: Name of the root folder where the pickle object will be saved
+    :param pickle_folder: Name of the folder where the pickle object will be saved
     :param root_folder: Name of the root folder where the pickle folder is created
     :return: True if the pickle file exists, else False
     """

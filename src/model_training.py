@@ -6,6 +6,9 @@ from src.models import ef_williams
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam, SGD, Adagrad, Adadelta, RMSprop
+from tensorflow.keras.utils import plot_model
+
+from matplotlib import pyplot as plt
 
 
 def get_optimizer(optimizer_str):
@@ -78,10 +81,40 @@ def create_model_folder_and_path(model_name, model_id):
     return model_folder, model_save_path
 
 
+def plot_history(history, model_id, val_metric, history_folder, root_folder, display_fig):
+    """
+    Plot history, display and save figures
+
+    :param history: TensorFlow history object
+    :param model_id: Model id (int)
+    :param val_metric: Metric used to monitor validation data
+    :param history_folder: Name of the folder where the history plot will be saved
+    :param root_folder: Name of the root folder where the history folder is created
+    :param display_fig: Whether we display the figures
+    """
+
+    # Create full path folder
+    full_path_folder = os.path.join(root_folder, history_folder)
+    if not os.path.isdir(full_path_folder):
+        os.makedirs(full_path_folder)
+
+    # summarize history for training and validation metric used to monitor
+    plt.plot(history.history[val_metric])
+    plt.plot(history.history['val_' + val_metric])
+    plt.title('Model {}'.format(val_metric))
+    plt.ylabel(val_metric)
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'])
+    if display_fig:
+        plt.show()
+    history_plot_path = os.path.join(full_path_folder, 'history_{}_{}.png'.format(model_id, val_metric))
+    plt.savefig(history_plot_path, bbox_inches='tight')
+
+
 def train_model(train_list, valid_list, test_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
                 num_nodes, dropout_rate, final_activ, learning_rate, optimizer_tf, optimizer_name, loss_function,
-                val_metric, patience, model_name, predict_neutral_class, model_id):
+                val_metric, patience, model_name, predict_neutral_class, model_id, display_fig):
     """
     Train the model.
 
@@ -105,6 +138,7 @@ def train_model(train_list, valid_list, test_list,
     :param model_name: Name of the model currently tested
     :param predict_neutral_class: Whether we predict the neutral class
     :param model_id: Model id (int)
+    :param display_fig: Whether we display the figures
     """
 
     x_train = train_list[0]
@@ -130,17 +164,17 @@ def train_model(train_list, valid_list, test_list,
     model_folder, model_save_path = create_model_folder_and_path(model_name, model_id)
 
     # Parameters for metric monitoring
-    monitor = 'val_loss' if val_metric == 'loss' else 'val_accuracy'
+    val_monitor = 'val_loss' if val_metric == 'loss' else 'val_accuracy'
     mode_monitor = 'min' if val_metric == 'loss' else 'max'
 
     # Initialize callbacks
     checkpoint = ModelCheckpoint(filepath=model_save_path,
                                  verbose=1,
-                                 monitor=monitor,
+                                 monitor=val_monitor,
                                  mode=mode_monitor,
                                  save_best_only=True)
 
-    early_stopping = EarlyStopping(monitor=monitor,
+    early_stopping = EarlyStopping(monitor=val_monitor,
                                    patience=patience,
                                    mode=mode_monitor,
                                    restore_best_weights=True)
@@ -184,3 +218,11 @@ def train_model(train_list, valid_list, test_list,
 
     model_folder = os.path.join("models_tested", model_name)
     save_with_pickle(history, "history_{}".format(model_id), pickle_folder="history", root_folder=model_folder)
+
+    # Save model plot
+    plot_model(model, to_file=os.path.join(model_folder, "models", "model_{}.png".format(model_id)), show_shapes=True,
+               show_layer_activations=True)
+
+    # Display and save history plot
+    plot_history(history, model_id, val_metric,
+                 history_folder="history", root_folder=model_folder, display_fig=display_fig)

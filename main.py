@@ -60,6 +60,8 @@ parser.add_argument('-sp', '--save_predictions', action='store_true',
                     help="Save predictions with pickle")
 parser.add_argument('-scm', '--save_confusion_matrix', action='store_true',
                     help="Save confusion matrix with pickle")
+parser.add_argument('-df', '--display_fig', action='store_true',
+                    help="Whether we display the figures")
 args = parser.parse_args()
 
 
@@ -103,7 +105,7 @@ def main():
                 args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers, args.num_nodes,
                 args.dropout_rate, args.final_activ, args.learning_rate, optimizer_tf, args.optimizer,
                 args.loss_function, args.val_metric, args.patience, args.model_name, args.predict_neutral_class,
-                model_id)
+                model_id, args.display_fig)
 
     # Model evaluation
     loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \

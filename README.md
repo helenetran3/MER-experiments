@@ -87,7 +87,7 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
                [-p PATIENCE] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-opt OPTIMIZER]
                [-lf LOSS_FUNCTION] [-lr LEARNING_RATE] [-v {loss,acc}] [-nc] [-emo]
                [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
-               [-rd ROUND_DECIMALS] [-sp] [-scm]
+               [-rd ROUND_DECIMALS] [-sp] [-scm] [-df]
 
     SOTA Multimodal Emotion Recognition models using CMU-MOSEI database.
     
@@ -153,6 +153,7 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
                             Save predictions with pickle
       -scm, --save_confusion_matrix
                             Save confusion matrix with pickle
+      -df, --display_fig    Whether we display the figures
 
     ```
 
