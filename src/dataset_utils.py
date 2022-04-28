@@ -136,7 +136,8 @@ def get_fold_ids(with_custom_split):
     return train_ids, valid_ids, test_ids
 
 
-def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold):
+def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold, predict_neutral_class):
+    #TODO: Split function to two (one for processing, and one for splitting)
     """
     For each training, validation and test sets, create three lists:
     - one for features (x): arrays of shape (number steps, number features) for text/image/audio features (concatenated
@@ -152,9 +153,21 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     :param test_ids: list of test ids
     :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
     :param pickle_name_fold: root name of the pickle object that contains the training, validation and test folds
+    :param predict_neutral_class: whether we predict neutral class
     :return: 3 lists train_list = [x_train, y_train, seg_train], valid_list = [x_valid, y_valid, seg_valid],
      test_list = [x_test, y_test, seg_test]
     """
+
+    def add_neutral_class(y_list):
+
+        y_list_with_n = []
+        for y in y_list:
+            sum_scores = np.sum(y)
+            new_labels = np.append(y, 1) if sum_scores == 0 else np.append(y, 0)
+            new_labels = np.reshape(new_labels, (1, -1))
+            y_list_with_n.append(new_labels)
+
+        return y_list_with_n
 
     # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
     EPS = 0
@@ -240,82 +253,36 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     print("Number of validation datapoints: {} ({:.2f}%)".format(valid_size, 100 * (valid_size / total_data_split)))
     print("Number of test datapoints: {} ({:.2f}%)".format(test_size, 100 * (test_size / total_data_split)))
 
-    train_res = [x_train, y_train, seg_train]
-    valid_res = [x_valid, y_valid, seg_valid]
-    test_res = [x_test, y_test, seg_test]
+    # Remove sentiment labels
+    y_train_emo = [y[:, 1:] for y in y_train]
+    y_valid_emo = [y[:, 1:] for y in y_valid]
+    y_test_emo = [y[:, 1:] for y in y_test]
+
+    y_train_emo_n = add_neutral_class(y_train_emo)
+    y_valid_emo_n = add_neutral_class(y_valid_emo)
+    y_test_emo_n = add_neutral_class(y_test_emo)
+
+    train_res = [x_train, y_train_emo, seg_train]
+    valid_res = [x_valid, y_valid_emo, seg_valid]
+    test_res = [x_test, y_test_emo, seg_test]
+
+    train_res_n = [x_train, y_train_emo_n, seg_train]
+    valid_res_n = [x_valid, y_valid_emo_n, seg_valid]
+    test_res_n = [x_test, y_test_emo_n, seg_test]
 
     # Save lists with pickle
     save_with_pickle(train_res, pickle_name_fold + "_train", pickle_folder="raw_folds", root_folder="cmu_mosei")
     save_with_pickle(valid_res, pickle_name_fold + "_valid", pickle_folder="raw_folds", root_folder="cmu_mosei")
     save_with_pickle(test_res, pickle_name_fold + "_test", pickle_folder="raw_folds", root_folder="cmu_mosei")
+    save_with_pickle(train_res_n, pickle_name_fold + "_train_n", pickle_folder="raw_folds", root_folder="cmu_mosei")
+    save_with_pickle(valid_res_n, pickle_name_fold + "_valid_n", pickle_folder="raw_folds", root_folder="cmu_mosei")
+    save_with_pickle(test_res_n, pickle_name_fold + "_test_n", pickle_folder="raw_folds", root_folder="cmu_mosei")
 
-    return train_res, valid_res, test_res
-
-
-def update_folds(train_list, valid_list, test_list, pickle_name_fold, predict_sentiment, predict_neutral_class):
-    # TODO Verify the function
-
-    root_folder = "cmu_mosei"
-    pickle_folder = "raw_folds"
-
-    def keep_only_emotion_labels(fold_list):
-        """
-        Remove the sentiment annotation from the labels.
-
-        :param fold_list: List of 3 lists of arrays (one for features, one for labels, one for segment ids)
-        :return: The same list with the sentiment annotations removed
-        """
-
-        y_list_with_emo_senti = fold_list[1]
-        y_list_with_emo = [y[:, 1:] for y in y_list_with_emo_senti]
-        fold_list_res = [fold_list[0], y_list_with_emo, fold_list[2]]
-
-        return fold_list_res
-
-    def add_neutral_class(fold_list):
-        """
-        Add neutral class to the labels.
-
-        :param fold_list: List of 3 lists of arrays (one for features, one for labels, one for segment ids)
-        :return: The same list + neutral class
-        """
-
-        y_list = fold_list[1]
-        y_list_with_neutral = []
-        for y in y_list:
-            sum_scores = np.sum(y) if not predict_sentiment else np.sum(y[1:])
-            new_labels = np.append(y, 1) if sum_scores == 0 else np.append(y, 0)
-            new_labels = np.reshape(new_labels, (1, -1))
-            y_list_with_neutral.append(new_labels)
-        fold_list_res = [fold_list[0], y_list_with_neutral, fold_list[2]]
-
-        return fold_list_res
-
-    pkl_ext_name = create_extension_name(predict_sentiment, predict_neutral_class)
-    pkl_train_name = pickle_name_fold + "_train" + pkl_ext_name
-    pkl_valid_name = pickle_name_fold + "_valid" + pkl_ext_name
-    pkl_test_name = pickle_name_fold + "_test" + pkl_ext_name
-
-    if pickle_file_exists(pickle_name_fold + "_train" + pkl_ext_name, pickle_folder, root_folder):
-        train_list = load_from_pickle(pkl_train_name, pickle_folder, root_folder)
-        valid_list = load_from_pickle(pkl_valid_name, pickle_folder, root_folder)
-        test_list = load_from_pickle(pkl_test_name, pickle_folder, root_folder)
+    # For training and evaluation
+    if predict_neutral_class:
+        return train_res, valid_res, test_res
     else:
-        if not predict_sentiment:
-            train_list = keep_only_emotion_labels(train_list)
-            valid_list = keep_only_emotion_labels(valid_list)
-            test_list = keep_only_emotion_labels(test_list)
-
-        if predict_neutral_class:
-            train_list = add_neutral_class(train_list)
-            valid_list = add_neutral_class(valid_list)
-            test_list = add_neutral_class(test_list)
-
-        save_with_pickle(train_list, pkl_train_name, pickle_folder, root_folder)
-        save_with_pickle(valid_list, pkl_valid_name, pickle_folder, root_folder)
-        save_with_pickle(test_list, pkl_test_name, pickle_folder, root_folder)
-
-    return train_list, valid_list, test_list
+        return train_res_n, valid_res_n, test_res_n
 
 
 # BUILD DATA GENERATOR AND TENSORFLOW DATASETS

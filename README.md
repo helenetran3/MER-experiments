@@ -64,6 +64,8 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
 - TensorFlow 2.8
 - Keras 2.8
 - NumPy 1.20.3
+- pydot 1.4.2
+- graphviz
 
 [Go to top](#sota-models-for-multimodal-emotion-recognition) :arrow_up:
 
@@ -138,8 +140,6 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
                             Metric to monitor for validation set. Values: loss or acc.
       -nc, --predict_neutral_class
                             Predict neutral class.
-      -emo, --predict_sentiment
-                            Predict sentiment in addition to emotions.
       -tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...], --threshold_emo_present 
           THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]
                             Threshold at which emotions are considered to be present.

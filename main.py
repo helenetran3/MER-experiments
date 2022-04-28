@@ -1,5 +1,5 @@
 from src.pickle_functions import pickle_file_exists, load_from_pickle, create_extension_name
-from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset, update_folds
+from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset
 from src.model_training import train_model, get_optimizer
 from src.model_evaluation import evaluate_model
 from src.csv_functions import save_model_param_in_csv_file, save_results_in_csv_file, get_header_and_data_model
@@ -48,8 +48,6 @@ parser.add_argument('-v', '--val_metric', type=str, choices=['loss', 'acc'],
                     help="Metric to monitor for validation set. Values: loss or acc.")
 parser.add_argument('-nc', '--predict_neutral_class', action='store_true',
                     help="Predict neutral class.")
-parser.add_argument('-emo', '--predict_sentiment', action='store_true',
-                    help="Predict sentiment in addition to emotions.")
 parser.add_argument('-tp', '--threshold_emo_present', type=float, nargs='+',
                     help="Threshold at which emotions are considered to be present. Values must be between 0 and 3. "
                          "Note that setting thresholds greater than 0 might lead to no positive true and predicted "
@@ -83,12 +81,12 @@ def main():
         train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
         train_list, valid_list, test_list = split_dataset(dataset,
                                                           train_ids, valid_ids, test_ids,
-                                                          args.image_feature, args.pickle_name_fold)
+                                                          args.image_feature, args.pickle_name_fold,
+                                                          args.predict_neutral_class)
 
-    # Update labels for each fold, depending on predict_sentiment and predict_neutral_class values
-    train_list, valid_list, test_list = update_folds(train_list, valid_list, test_list,
-                                                     args.pickle_name_fold, args.predict_sentiment,
-                                                     args.predict_neutral_class)
+    # # Update labels for each fold, depending on predict_neutral_class value
+    # train_list, valid_list, test_list = update_folds(train_list, valid_list, test_list,
+    #                                                  args.pickle_name_fold, args.predict_neutral_class)
 
     # Save model parameters and return model id
     model_header, model_data = get_header_and_data_model(args.model_name, args.num_layers, args.num_nodes,
@@ -98,7 +96,7 @@ def main():
                                             args.learning_rate, args.val_metric, args.predict_neutral_class,
                                             args.model_name)
 
-    extension_name = create_extension_name(args.predict_sentiment, args.predict_neutral_class)
+    extension_name = create_extension_name(args.predict_neutral_class)
 
     # Model training
     train_model(train_list, valid_list, test_list,
