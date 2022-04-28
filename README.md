@@ -71,7 +71,7 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
 1. Clone [CMU MultimodalSDK](https://github.com/A2Zadeh/CMU-MultimodalSDK) and follow the installation steps outlined there.
 2. Two ways to run the code:
 
-   1. **Using bash script** (you can set the parameters by editing the file):
+   1. **Using bash script** (recommended, parameters can be set by editing the file):
    
     ```commandline
     ./run_cluster.sh
