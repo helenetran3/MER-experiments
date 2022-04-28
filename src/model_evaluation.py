@@ -234,7 +234,7 @@ def model_prediction(model, test_dataset, num_test_samples, save_pred, model_id,
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
                    model_name, model_id, predict_neutral_class, threshold_emo_pres, round_decimals,
-                   extension_name, save_pred, save_confusion_matrix):
+                   extension_name, save_pred, save_confusion_matrix, display_fig):
     """
     Evaluate the performance of the best model.
 
@@ -287,7 +287,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
     # Confusion matrix
     if save_confusion_matrix:
         compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, threshold_emo_pres, num_classes,
-                                            model_id, model_folder)
+                                            model_id, model_folder, display_fig)
 
     # Model evaluation
     loss_function_val = compute_loss_value(model, test_dataset, loss_function, round_decimals)

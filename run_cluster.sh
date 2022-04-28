@@ -24,7 +24,7 @@ python3 main.py \
 --num_nodes 100 \
 --dropout_rate 0.2 \
 --final_activ linear \
---num_epochs 2 \
+--num_epochs 1 \
 --patience 1 \
 --batch_size 32 \
 --fixed_num_steps 45 \
@@ -35,7 +35,8 @@ python3 main.py \
 --predict_neutral_class \
 --threshold_emo_present 0 0.5 1 \
 --round_decimals 3 \
---save_confusion_matrix
+--save_confusion_matrix \
+--display_fig
 #--save_predictions
 #--with_custom_split \
 #--predict_sentiment \

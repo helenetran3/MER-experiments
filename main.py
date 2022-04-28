@@ -111,7 +111,7 @@ def main():
     loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
         evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.loss_function, args.model_name, model_id,
                        args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, extension_name,
-                       args.save_predictions, args.save_confusion_matrix)
+                       args.save_predictions, args.save_confusion_matrix, args.display_fig)
 
     # Save metrics in csv file
     save_results_in_csv_file(args.model_name, model_id, args.loss_function, loss_function_val,
