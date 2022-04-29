@@ -65,7 +65,16 @@ args = parser.parse_args()
 
 def main():
 
+    # Placed at the beginning in order to verify optimizer name quickly
     optimizer_tf = get_optimizer(args.optimizer)
+
+    # Save model parameters and return model id
+    model_header, model_data = get_header_and_data_model(args.model_name, args.num_layers, args.num_nodes,
+                                                         args.dropout_rate, args.final_activ)
+    model_id = save_model_param_in_csv_file(model_data, model_header, args.num_epochs, args.patience,
+                                            args.batch_size, args.fixed_num_steps, args.optimizer, args.loss_function,
+                                            args.learning_rate, args.val_metric, args.predict_neutral_class,
+                                            args.model_name)
 
     # Get data for training, validation and test sets from pickle (split provided by the SDK)
     if pickle_file_exists(args.pickle_name_fold + "_train", "raw_folds", "cmu_mosei"):
@@ -83,13 +92,7 @@ def main():
                                                           train_ids, valid_ids, test_ids,
                                                           args.image_feature, args.pickle_name_fold)
 
-    # Save model parameters and return model id
-    model_header, model_data = get_header_and_data_model(args.model_name, args.num_layers, args.num_nodes,
-                                                         args.dropout_rate, args.final_activ)
-    model_id = save_model_param_in_csv_file(model_data, model_header, args.num_epochs, args.patience,
-                                            args.batch_size, args.fixed_num_steps, args.optimizer, args.loss_function,
-                                            args.learning_rate, args.val_metric, args.predict_neutral_class,
-                                            args.model_name)
+    all_scores = [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]  # TODO: get it from training fold
 
     # Model training
     train_model(train_list, valid_list, test_list,
@@ -102,7 +105,7 @@ def main():
     ext_name = "_n" if args.predict_neutral_class else ""
     loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
         evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.loss_function, args.model_name, model_id,
-                       args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, ext_name,
+                       all_scores, args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, ext_name,
                        args.save_predictions, args.save_confusion_matrix, args.display_fig)
 
     # Save metrics in csv file

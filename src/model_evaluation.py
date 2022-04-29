@@ -30,7 +30,7 @@ def model_prediction(model, test_dataset, num_test_samples, save_pred, model_id,
 
 
 def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
-                   model_name, model_id, predict_neutral_class, threshold_emo_pres, round_decimals,
+                   model_name, model_id, all_scores, predict_neutral_class, threshold_emo_pres, round_decimals,
                    ext_name, save_pred, save_confusion_matrix, display_fig):
     """
     Evaluate the performance of the best model.
@@ -41,6 +41,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
     :param loss_function: Loss function
     :param model_name: Name of the model currently tested
     :param model_id: Model id (int)
+    :param all_scores: list of available presence scores
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
     :param round_decimals: Number of decimals to be rounded for metrics
@@ -68,10 +69,8 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
                                   train_mode=False)
 
     # True labels
-    true_scores_all = create_array_true_scores(y_test, num_classes, ext_name)
-    all_scores = get_available_presence_scores(true_scores_all)
-    true_scores_coa, true_classes_pres, true_classes_dom = \
-        compute_true_labels(true_scores_all, all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name)
+    true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom = \
+        compute_true_labels(y_test, all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name)
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, save_pred, model_id, model_folder)

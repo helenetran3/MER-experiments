@@ -108,26 +108,32 @@ def create_array_true_scores(y_test, num_classes, ext_name):
     return true_scores_all
 
 
-def compute_true_labels(true_scores_all, all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name):
+def compute_true_labels(y_list, all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name):
     """
-    Compute the true labels (all arrays of shape (test_size, 6), true_classes_pres is a list of arrays of this type)
-    true_scores_coa: Closest true score among [0, 1, 2, 3]
-    true_classes_pres: Emotions truly present (varying thresholds for presence score given by threshold_emo_pres)
-    true_classes_dom: Emotions truly dominant (highest presence score)
+    Compute the true labels from a list of 2D arrays of shape (1, num_classes) (y_list)
+    The results are all 3D arrays, true_classes_pres is a list of arrays of this type)
+    true_scores_all: Presence scores provided by the dataset. Shape: (number of y elements, 6)
+    true_scores_coa: Closest true score among [0, 1, 2, 3]. Shape: (number of y elements, 6)
+    true_classes_pres: Emotions truly present (varying thresholds for presence score given by threshold_emo_pres).
+    Shape: (number of y elements, num_classes)
+    true_classes_dom: Emotions truly dominant (highest presence score). Shape: (number of y elements, num_classes)
 
-    :param true_scores_all: array of shape (test size, 6) giving the true scores for the 6 emotions (given by the database).
-           Possible values of true_scores_all: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
+    :param y_list: List of arrays of shape (1, num_classes)
     :param all_scores: list of available presence scores
     :param predict_neutral_class: Whether we predict the neutral class
     :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
-    :param num_classes: number of classes (7 with neutral class, else 6)
+    :param num_classes: number of emotion classes (7 with neutral class, else 6)
     :param ext_name: extension name containing info on whether we predict sentiment/neutral class
-    :return: true_scores_coa, true_classes_pres, true_classes_dom
+    :return: true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom
     """
 
-    if not pickle_file_exists("true_scores_coa" + ext_name, pickle_folder='processed_folds', root_folder='cmu_mosei'):
+    if not pickle_file_exists("true_scores_all" + ext_name, pickle_folder='processed_folds', root_folder='cmu_mosei'):
+        
+        # Create 2D array from list of 2D true presence score arrays of shape (1, 6)
+        true_scores_all = np.reshape(np.array(y_list), (-1, num_classes))
+        save_with_pickle(true_scores_all, "true_scores_all" + ext_name, 'processed_folds', 'cmu_mosei')
 
-        # Compute true presence scores: arrays of shape (4654, 7)
+        # Compute true presence scores: arrays of shape (4654, 6)
         # Possible values: [0, 0.16, 0.33, 0.5, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3]
         # Coarse-grained values: [0, 1, 2, 3]
         true_scores_coa = get_presence_score_from_finer_grained_val(true_scores_all, all_scores, num_classes, coarse=True)
@@ -142,11 +148,12 @@ def compute_true_labels(true_scores_all, all_scores, predict_neutral_class, thre
         save_with_pickle(true_classes_dom, "true_classes_dom" + ext_name, 'processed_folds', 'cmu_mosei')
 
     else:
+        true_scores_all = load_from_pickle("true_scores_all" + ext_name, 'processed_folds', 'cmu_mosei')
         true_scores_coa = load_from_pickle("true_scores_coa" + ext_name, 'processed_folds', 'cmu_mosei')
         true_classes_pres = load_from_pickle("true_classes_pres" + ext_name, 'processed_folds', 'cmu_mosei')
         true_classes_dom = load_from_pickle("true_classes_dom" + ext_name, 'processed_folds', 'cmu_mosei')
 
-    return true_scores_coa, true_classes_pres, true_classes_dom
+    return true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom
 
 
 def compute_pred_labels(pred_raw, all_scores, predict_neutral_class, threshold_emo_pres, save_pred, model_id,
@@ -191,22 +198,3 @@ def compute_pred_labels(pred_raw, all_scores, predict_neutral_class, threshold_e
 
     return pred_scores_all, pred_scores_coa, pred_classes_pres, pred_classes_dom
 
-
-def process_label_from_folds(fold_list, all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name):
-    """
-
-    :param fold_list: list of arrays of shape (fold size, 6 or 7)
-    :param all_scores: list of available presence scores
-    :param predict_neutral_class: Whether we predict neutral class
-    :param threshold_emo_pres: list of thresholds at which emotions are considered to be present. Must be between 0 and 3
-    :param num_classes: number of emotion classes (7 with neutral class, else 6)
-    :param ext_name: extension name containing info on whether we predict neutral class
-    :return: true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom
-    """
-
-    # True labels
-    true_scores_all = create_array_true_scores(fold_list, num_classes, ext_name)
-    true_scores_coa, true_classes_pres, true_classes_dom = \
-        compute_true_labels(true_scores_all, all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name)
-
-    return [true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom]
