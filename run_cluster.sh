@@ -26,7 +26,7 @@ python3 main.py \
 --final_activ linear \
 --num_epochs 1 \
 --patience 1 \
---batch_size 32 \
+--batch_size 128 \
 --fixed_num_steps 45 \
 --optimizer adam \
 --loss_function mean_absolute_error \
@@ -36,7 +36,7 @@ python3 main.py \
 --threshold_emo_present 0 0.5 1 \
 --round_decimals 3 \
 --save_confusion_matrix \
---display_fig
-#--save_predictions
+--display_fig \
+--save_predictions
 #--with_custom_split \
 #--display_fig

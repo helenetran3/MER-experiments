@@ -1,4 +1,4 @@
-from src.pickle_functions import pickle_file_exists, load_from_pickle, create_extension_name
+from src.pickle_functions import pickle_file_exists, load_from_pickle
 from src.dataset_utils import get_dataset_from_sdk, get_fold_ids, split_dataset
 from src.model_training import train_model, get_optimizer
 from src.model_evaluation import evaluate_model
@@ -68,10 +68,10 @@ def main():
     optimizer_tf = get_optimizer(args.optimizer)
 
     # Get data for training, validation and test sets from pickle (split provided by the SDK)
-    if pickle_file_exists(args.pickle_name_fold + "_train", pickle_folder="raw_folds", root_folder="cmu_mosei"):
-        train_list = load_from_pickle(args.pickle_name_fold + "_train", pickle_folder="raw_folds", root_folder="cmu_mosei")
-        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", pickle_folder="raw_folds", root_folder="cmu_mosei")
-        test_list = load_from_pickle(args.pickle_name_fold + "_test", pickle_folder="raw_folds", root_folder="cmu_mosei")
+    if pickle_file_exists(args.pickle_name_fold + "_train", "raw_folds", "cmu_mosei"):
+        train_list = load_from_pickle(args.pickle_name_fold + "_train", "raw_folds", "cmu_mosei")
+        valid_list = load_from_pickle(args.pickle_name_fold + "_valid", "raw_folds", "cmu_mosei")
+        test_list = load_from_pickle(args.pickle_name_fold + "_test",  "raw_folds", "cmu_mosei")
 
     else:
         # Load CMU-MOSEI dataset
@@ -81,12 +81,7 @@ def main():
         train_ids, valid_ids, test_ids = get_fold_ids(args.with_custom_split)
         train_list, valid_list, test_list = split_dataset(dataset,
                                                           train_ids, valid_ids, test_ids,
-                                                          args.image_feature, args.pickle_name_fold,
-                                                          args.predict_neutral_class)
-
-    # # Update labels for each fold, depending on predict_neutral_class value
-    # train_list, valid_list, test_list = update_folds(train_list, valid_list, test_list,
-    #                                                  args.pickle_name_fold, args.predict_neutral_class)
+                                                          args.image_feature, args.pickle_name_fold)
 
     # Save model parameters and return model id
     model_header, model_data = get_header_and_data_model(args.model_name, args.num_layers, args.num_nodes,
@@ -96,8 +91,6 @@ def main():
                                             args.learning_rate, args.val_metric, args.predict_neutral_class,
                                             args.model_name)
 
-    extension_name = create_extension_name(args.predict_neutral_class)
-
     # Model training
     train_model(train_list, valid_list, test_list,
                 args.batch_size, args.num_epochs, args.fixed_num_steps, args.num_layers, args.num_nodes,
@@ -106,15 +99,16 @@ def main():
                 model_id, args.display_fig)
 
     # Model evaluation
+    ext_name = "_n" if args.predict_neutral_class else ""
     loss_function_val, metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
         evaluate_model(test_list, args.batch_size, args.fixed_num_steps, args.loss_function, args.model_name, model_id,
-                       args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, extension_name,
+                       args.predict_neutral_class, args.threshold_emo_present, args.round_decimals, ext_name,
                        args.save_predictions, args.save_confusion_matrix, args.display_fig)
 
     # Save metrics in csv file
     save_results_in_csv_file(args.model_name, model_id, args.loss_function, loss_function_val,
                              metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant,
-                             args.predict_neutral_class, args.threshold_emo_present, extension_name)
+                             args.predict_neutral_class, args.threshold_emo_present, ext_name)
 
 
 if __name__ == "__main__":

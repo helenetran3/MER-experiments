@@ -56,16 +56,3 @@ def load_from_pickle(pickle_name, pickle_folder, root_folder):
         p_object = pickle.load(fr)
 
     return p_object
-
-
-def create_extension_name(predict_neutral_class):
-    """
-    Create an extension name which gives values for predict_neutral_class.
-
-    :param predict_neutral_class: whether we predict neutral class
-    :return: ext_name
-    """
-
-    ext_name = "_n" if predict_neutral_class else ""
-
-    return ext_name

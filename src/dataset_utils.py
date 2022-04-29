@@ -136,7 +136,7 @@ def get_fold_ids(with_custom_split):
     return train_ids, valid_ids, test_ids
 
 
-def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold, predict_neutral_class):
+def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold):
     """
     For each training, validation and test sets, create three lists:
     - one for features (x): arrays of shape (number steps, number features) for text/image/audio features (concatenated
@@ -145,6 +145,7 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     - one for segment ids (seg): id of the segment described by (x, y). Example: 'zk2jTlAtvSU[1]'
     (Followed tutorial https://github.com/Justin1904/CMU-MultimodalSDK-Tutorials/blob/master/tutorial_interactive.ipynb)
     Note that this function performs **early fusion** (concatenation of low level text, image and audio features).
+    # TODO Separate modalities.
 
     :param dataset: CMU-MOSEI mmdataset
     :param train_ids: list of training ids
@@ -152,21 +153,9 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     :param test_ids: list of test ids
     :param image_feature: image feature type (either FACET 4.2 or OpenFace 2)
     :param pickle_name_fold: root name of the pickle object that contains the training, validation and test folds
-    :param predict_neutral_class: whether we predict neutral class
     :return: 3 lists train_list = [x_train, y_train, seg_train], valid_list = [x_valid, y_valid, seg_valid],
      test_list = [x_test, y_test, seg_test]
     """
-
-    def add_neutral_class(y_list):
-
-        y_list_with_n = []
-        for y in y_list:
-            sum_scores = np.sum(y)
-            new_label = np.append(y, 1) if sum_scores == 0 else np.append(y, 0)
-            new_label = np.reshape(new_label, (1, -1))
-            y_list_with_n.append(new_label)
-
-        return y_list_with_n
 
     # a sentinel epsilon for safe division, without it we will replace illegal values with a constant
     EPS = 0
@@ -257,31 +246,16 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
     y_valid_emo = [y[:, 1:] for y in y_valid]
     y_test_emo = [y[:, 1:] for y in y_test]
 
-    y_train_emo_n = add_neutral_class(y_train_emo)
-    y_valid_emo_n = add_neutral_class(y_valid_emo)
-    y_test_emo_n = add_neutral_class(y_test_emo)
-
     train_res = [x_train, y_train_emo, seg_train]
     valid_res = [x_valid, y_valid_emo, seg_valid]
     test_res = [x_test, y_test_emo, seg_test]
-
-    train_res_n = [x_train, y_train_emo_n, seg_train]
-    valid_res_n = [x_valid, y_valid_emo_n, seg_valid]
-    test_res_n = [x_test, y_test_emo_n, seg_test]
 
     # Save lists with pickle
     save_with_pickle(train_res, pickle_name_fold + "_train", pickle_folder="raw_folds", root_folder="cmu_mosei")
     save_with_pickle(valid_res, pickle_name_fold + "_valid", pickle_folder="raw_folds", root_folder="cmu_mosei")
     save_with_pickle(test_res, pickle_name_fold + "_test", pickle_folder="raw_folds", root_folder="cmu_mosei")
-    save_with_pickle(train_res_n, pickle_name_fold + "_train_n", pickle_folder="raw_folds", root_folder="cmu_mosei")
-    save_with_pickle(valid_res_n, pickle_name_fold + "_valid_n", pickle_folder="raw_folds", root_folder="cmu_mosei")
-    save_with_pickle(test_res_n, pickle_name_fold + "_test_n", pickle_folder="raw_folds", root_folder="cmu_mosei")
 
-    # For training and evaluation
-    if predict_neutral_class:
-        return train_res, valid_res, test_res
-    else:
-        return train_res_n, valid_res_n, test_res_n
+    return train_res, valid_res, test_res
 
 
 # BUILD DATA GENERATOR AND TENSORFLOW DATASETS
