@@ -137,7 +137,6 @@ def get_fold_ids(with_custom_split):
 
 
 def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle_name_fold, predict_neutral_class):
-    #TODO: Split function to two (one for processing, and one for splitting)
     """
     For each training, validation and test sets, create three lists:
     - one for features (x): arrays of shape (number steps, number features) for text/image/audio features (concatenated
@@ -163,9 +162,9 @@ def split_dataset(dataset, train_ids, valid_ids, test_ids, image_feature, pickle
         y_list_with_n = []
         for y in y_list:
             sum_scores = np.sum(y)
-            new_labels = np.append(y, 1) if sum_scores == 0 else np.append(y, 0)
-            new_labels = np.reshape(new_labels, (1, -1))
-            y_list_with_n.append(new_labels)
+            new_label = np.append(y, 1) if sum_scores == 0 else np.append(y, 0)
+            new_label = np.reshape(new_label, (1, -1))
+            y_list_with_n.append(new_label)
 
         return y_list_with_n
 
