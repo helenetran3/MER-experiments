@@ -4,7 +4,7 @@ from tensorflow.keras.models import load_model
 from src.pickle_functions import save_with_pickle
 from src.dataset_utils import get_tf_dataset
 from src.model_metrics import compute_loss_value, compute_multilabel_confusion_matrix, get_and_print_all_metrics
-from src.label_processing import get_available_presence_scores, create_array_true_scores, compute_true_labels, compute_pred_labels
+from src.label_processing import compute_true_labels, compute_pred_labels
 
 
 def model_prediction(model, test_dataset, num_test_samples, save_pred, model_id, model_folder):
@@ -70,7 +70,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
 
     # True labels
     true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom = \
-        compute_true_labels(y_test, all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name)
+        compute_true_labels(y_test, "test", all_scores, predict_neutral_class, threshold_emo_pres, num_classes, ext_name)
 
     # Predicted labels
     pred_raw = model_prediction(model, test_dataset, num_test_samples, save_pred, model_id, model_folder)
