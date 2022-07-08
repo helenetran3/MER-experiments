@@ -113,7 +113,7 @@ def plot_history(history, model_id, val_metric, history_folder, root_folder, dis
 
 def train_model(train_list, valid_list, test_list,
                 batch_size, num_epochs, fixed_num_steps, num_layers,
-                num_nodes, dropout_rate, final_activ, learning_rate, optimizer_tf, optimizer_name, loss_function,
+                num_nodes, dropout_rate, final_activ, learning_rate, optimizer_name, loss_function,
                 val_metric, patience, model_name, predict_neutral_class, model_id, display_fig):
     """
     Train the model.
@@ -130,7 +130,6 @@ def train_model(train_list, valid_list, test_list,
     :param dropout_rate: Dropout rate before each dense layer
     :param final_activ: Final activation function
     :param learning_rate: Learning rate for training
-    :param optimizer_tf: TensorFlow optimizer
     :param optimizer_name: optimizer name
     :param loss_function: Loss function
     :param val_metric: Metric on validation data to monitor
@@ -181,6 +180,7 @@ def train_model(train_list, valid_list, test_list,
 
     # Build model
     num_features = x_train[0].shape[1]
+    optimizer_tf = get_optimizer(optimizer_name)
     optimizer_lr = optimizer_tf(learning_rate=learning_rate)
     model_class = get_model(model_name, model_id, num_features, num_classes, fixed_num_steps, num_layers, num_nodes,
                             dropout_rate, final_activ)
@@ -192,7 +192,7 @@ def train_model(train_list, valid_list, test_list,
     print("Number training datapoints: {} ({:.2f}%)".format(num_train_samples, 100 * (num_train_samples / total_data)))
     print("Number validation datapoints: {} ({:.2f}%)".format(num_valid_samples, 100 * (num_valid_samples / total_data)))
     print("Number test datapoints: {} ({:.2f}%)".format(num_test_samples, 100 * (num_test_samples / total_data)))
-    print("Number of classes:", num_classes)
+    print("Number of output cells:", num_classes)
     print("Predict neutral class:", predict_neutral_class)
     print("\n>>> Model training")
     print("Batch size:", batch_size)

@@ -56,18 +56,3 @@ def load_from_pickle(pickle_name, pickle_folder, root_folder):
         p_object = pickle.load(fr)
 
     return p_object
-
-
-def create_extension_name(predict_sentiment, predict_neutral_class):
-    """
-    Create an extension name which gives values for predict_sentiment and predict_neutral_class.
-
-    :param predict_sentiment: whether we predict the sentiment
-    :param predict_neutral_class: whether we predict neutral class
-    :return: ext_name
-    """
-
-    ext_name = "_emo" if not predict_sentiment else ""
-    ext_name = ext_name + "_with_n" if predict_neutral_class else ext_name
-
-    return ext_name
