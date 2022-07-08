@@ -285,13 +285,14 @@ def compute_multilabel_confusion_matrix(true_classes_pres, pred_classes_pres, th
     plot_multilabel_confusion_matrix(threshold_emo_pres, num_classes, model_id, model_folder, display_fig)
 
 
-def get_and_print_all_metrics(true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,
+def get_and_print_all_metrics(label_type, true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,
                               pred_raw, pred_scores_coa, pred_classes_pres, pred_classes_dom,
                               threshold_emo_pres, num_classes, predict_neutral_class, round_decimals):
     """
     Compute metrics for four tasks: estimation of presence score (regression), classification of presence score among
     [0, 1, 2, 3], binary classification for each emotion, and prediction of dominant classes (multilabel classification)
 
+    :param label_type: Type of labels used for model training and evaluation.
     :param true_scores_all: array of shape (test_size, num_classes) giving the true presence score of the emotions
     :param true_scores_coa: array of shape (test_size, num_classes) giving the true presence score among [0, 1, 2, 3]
     :param true_classes_pres: list of binary arrays of shape (test_size, num_classes) giving the true presence of an
@@ -314,15 +315,21 @@ def get_and_print_all_metrics(true_scores_all, true_scores_coa, true_classes_pre
           "anger, surprise, disgust, fear", end="")
     print(", neutral.\n") if predict_neutral_class else print(".\n")
 
-    # Regression metrics
-    print("\n------- Presence score estimation (regression) --------\n")
-    metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
+    compute_score_metrics = True if label_type == "all" or label_type == "coarse" else False
+
+    if compute_score_metrics:
+        # Regression metrics
+        print("\n------- Presence score estimation (regression) --------\n")
+        metrics_regression = get_regression_metrics(true_scores_all, pred_raw, round_decimals)
+
+        print("\n------- Presence score classification [0,1,2,3] -------\n")
+        metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, num_classes,
+                                                                 round_decimals)
+    else:
+        metrics_regression = ['-' for _ in range(21)]  # 21 regression metric values replaced by "-"
+        metrics_score_coa = ['-' for _ in range(43)]
 
     # Classification metrics
-    print("\n------- Presence score classification [0,1,2,3] -------\n")
-    metrics_score_coa = get_classification_metrics_score_coa(true_scores_coa, pred_scores_coa, num_classes,
-                                                             round_decimals)
-
     print("\n------- Detecting the presence of emotions ------------")
     metrics_presence = [get_classification_metrics(true_classes_pres[i], pred_classes_pres[i], num_classes,
                                                    round_decimals, thres) for i, thres in enumerate(threshold_emo_pres)]

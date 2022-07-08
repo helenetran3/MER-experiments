@@ -29,7 +29,7 @@ def model_prediction(model, test_dataset, num_test_samples, save_pred, model_id,
     return pred_raw
 
 
-def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
+def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function, label_type,
                    model_name, model_id, all_scores, predict_neutral_class, threshold_emo_pres, round_decimals,
                    ext_name, save_pred, save_confusion_matrix, display_fig):
     """
@@ -39,6 +39,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
     :param batch_size: Batch size for training
     :param fixed_num_steps: Fixed size for all the sequences (if we keep the original size, this parameter is set to 0)
     :param loss_function: Loss function
+    :param label_type: Type of labels used for model training and evaluation.
     :param model_name: Name of the model currently tested
     :param model_id: Model id (int)
     :param all_scores: list of available presence scores
@@ -88,7 +89,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
 
     # Compute all metrics
     metrics_regression, metrics_score_coa, metrics_presence, metrics_dominant = \
-        get_and_print_all_metrics(true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,
+        get_and_print_all_metrics(label_type, true_scores_all, true_scores_coa, true_classes_pres, true_classes_dom,
                                   pred_raw, pred_scores_coa, pred_classes_pres, pred_classes_dom,
                                   threshold_emo_pres, num_classes, predict_neutral_class, round_decimals)
 

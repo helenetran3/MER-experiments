@@ -86,8 +86,10 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
      usage: main.py [-h] [-pnd PICKLE_NAME_DATASET] [-pnf PICKLE_NAME_FOLD] [-t] [-al]
                [-f {facet,openface}] [-c] [-mn MODEL_NAME] [-l NUM_LAYERS]
                [-n NUM_NODES] [-d DROPOUT_RATE] [-a FINAL_ACTIV] [-e NUM_EPOCHS]
-               [-p PATIENCE] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS] [-opt OPTIMIZER]
-               [-lf LOSS_FUNCTION] [-lr LEARNING_RATE] [-v {loss,acc}] [-nc] [-emo]
+               [-p PATIENCE] [-b BATCH_SIZE] [-s FIXED_NUM_STEPS]
+               [-lt {all,coarse,present,dominant}]
+               [-opt {adam,sgd,adagrad,adadelta,rmsprop}] [-lf LOSS_FUNCTION]
+               [-lr LEARNING_RATE] [-v {loss,acc}] [-nc]
                [-tp THRESHOLD_EMO_PRESENT [THRESHOLD_EMO_PRESENT ...]]
                [-rd ROUND_DECIMALS] [-sp] [-scm] [-df]
 
@@ -129,7 +131,13 @@ with sentiment in range [-3,3] and the six emotions in range [0,3]. In this repo
       -s FIXED_NUM_STEPS, --fixed_num_steps FIXED_NUM_STEPS
                             Number of steps to fix for all sequences. Set to 0 if you want
                             to keep the original number of steps.
-      -opt OPTIMIZER, --optimizer OPTIMIZER
+      -lt {all,coarse,present,dominant}, --label_type {all,coarse,present,dominant}
+                            Type of labels used for model training and evaluation.
+                            Possible values: all (for all presencescores provided by
+                            the dataset), coarse (presence score for each emotion among
+                            [0, 1, 2, 3]), present (multi-label classification),
+                            dominant (multi-label classification)
+      -opt {adam,sgd,adagrad,adadelta,rmsprop}, --optimizer {adam,sgd,adagrad,adadelta,rmsprop}
                             Optimizer for model training. Values: adam, sgd, adagrad,
                             adadelta, rmsprop.
       -lf LOSS_FUNCTION, --loss_function LOSS_FUNCTION

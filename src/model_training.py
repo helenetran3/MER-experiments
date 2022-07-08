@@ -105,10 +105,10 @@ def plot_history(history, model_id, val_metric, history_folder, root_folder, dis
     plt.ylabel(val_metric)
     plt.xlabel('epoch')
     plt.legend(['train', 'val'])
-    if display_fig:
-        plt.show()
     history_plot_path = os.path.join(full_path_folder, 'history_{}_{}.png'.format(model_id, val_metric))
     plt.savefig(history_plot_path, bbox_inches='tight')
+    if display_fig:
+        plt.show()
 
 
 def train_model(train_list, valid_list, test_list,
