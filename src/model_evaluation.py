@@ -257,7 +257,7 @@ def evaluate_model(test_list, batch_size, fixed_num_steps, loss_function,
     """
 
     # Load best model
-    model_folder = os.path.join('models_tested', model_name)
+    model_folder = os.path.join('results', model_name)
     model_path = os.path.join(model_folder, 'models', "model_{}.h5".format(model_id))
     model = load_model(model_path)
 

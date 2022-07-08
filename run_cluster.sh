@@ -24,7 +24,7 @@ python3 main.py \
 --num_nodes 100 \
 --dropout_rate 0.2 \
 --final_activ linear \
---num_epochs 1 \
+--num_epochs 5 \
 --patience 1 \
 --batch_size 32 \
 --fixed_num_steps 45 \

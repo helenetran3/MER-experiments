@@ -13,7 +13,7 @@ def create_csv_path(model_name, filename, extension_name=""):
     :return: Path to csv file.
     """
     # Create csv folder
-    model_csv_folder = os.path.join('models_tested', model_name, 'csv')
+    model_csv_folder = os.path.join('results', model_name, 'csv')
     if not os.path.isdir(model_csv_folder):
         os.makedirs(model_csv_folder)
 
